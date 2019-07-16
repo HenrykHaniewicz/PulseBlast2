@@ -21,3 +21,4 @@ class TemplateLoadError( Exception ):
 
     def __init__( self, message ):
         self.message = message
+        # This is a thing
