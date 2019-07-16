@@ -7,10 +7,7 @@ Smart file name handling for both load and save
     Try to load
 Only works for Format 2 at the moment...
 
-On / Off dict --- [{ 'MJD' : mjd, 'ON' : on_file, 'OFF' : off_file, 'FE' : fe, 'NUM' : num }]
-
 DO NOT MAKE 'C++' CODE AGAIN!!!!!!! THIS IS PYTHON
-
 
 CAL_DICT_LIST --- [ [{ 'ARC' : arc, 'DATA' : aabb_data, 'S_DUTY' : arc.getValue( 'CAL_PHS' ) , 'DUTY' : arc.getValue( 'CAL_DCYC' ), 'BW' : arc.getBandwidth(), 'CTR_F' : arc.getCenterFrequency( weighted = True ) }, {  }, {  }], [{}{}{}] ]
 """
@@ -222,6 +219,13 @@ class FluxCalibrator:
 
     def calculate_Jy_per_count( self, cal_file_list ):
 
+        """
+        Input list: [ PSR_CAL, ON_CAL, OFF_CAL ]
+
+        Returns:
+        conversion_factor  :  np.ndarray
+        """
+
         G = 11.0
 
         if type( cal_file_list ) != np.ndarray:
@@ -248,7 +252,7 @@ class FluxCalibrator:
             aabb_list.append( l )
 
 
-        H, L, T0 = self.prepare_calibration( aabb_list )
+        H, L, T0 = self._prepare_calibration( aabb_list )
         F_ON = ( H[1]/L[1] ) - 1
         F_OFF = ( H[2]/L[2] ) - 1
 
@@ -264,7 +268,7 @@ class FluxCalibrator:
         return conversion_factor
 
 
-    def prepare_calibration( self, archive_list, r_err = 8 ):
+    def _prepare_calibration( self, archive_list, r_err = 8 ):
 
         H = []
         L = []
@@ -316,6 +320,10 @@ class FluxCalibrator:
 
     def calibrate( self ):
 
+        """
+        Master calibration method
+        """
+
         conv_file = "{}_{}_fluxcalibration_conversion_factors.pkl".format( self.psr_name, self.cont_name )
         conv_abs_path = os.path.join( self.pkl_dir, 'calibration', conv_file )
 
@@ -359,7 +367,7 @@ class FluxCalibrator:
                 data = ar.data_orig
                 new_data = []
                 for sub in data:
-                    A, B, C, D = self.convert_subint_pol_state( sub, ar.getValue( 'POL_TYPE' ), "AABBCRCI", linear = ar.header[ 'FD_POLN' ] )
+                    A, B, C, D = self.convert_subint_pol_state( sub, ar.subintheader[ 'POL_TYPE' ], "AABBCRCI", linear = ar.header[ 'FD_POLN' ] )
                     new_data.append( [ A, B ] )
 
                 for sub in new_data:
@@ -373,7 +381,9 @@ class FluxCalibrator:
 
     def convert_subint_pol_state( self, subint, input, output, linear = 'LIN' ):
 
-        print(input, output)
+        """
+
+        """
 
         if input == output:
             out_S = subint

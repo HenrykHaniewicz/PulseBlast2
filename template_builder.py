@@ -67,7 +67,7 @@ class Template:
         if not os.path.exists( self.pkl_dir ):
             os.makedirs( os.path.join( self.pkl_dir )
 
-        return
+        return self
 
 
     def prepare_file( self, file ):
@@ -102,7 +102,7 @@ class Template:
     def load_template( self ):
 
         """
-        Attempts to load template from before. Otherwise, creates a new template with conventional name.
+        Attempts to load template from save. Otherwise, creates a new template with conventional name.
         """
 
         filename = self.pklfile
