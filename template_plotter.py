@@ -3,7 +3,7 @@
 import numpy as np
 import matplotlib.pyplot as plt
 
-clr = 'k'
+clr = 'b'
 
 
 def plot_templates( BW, *filenames ):
@@ -66,8 +66,8 @@ def plot_templates( BW, *filenames ):
     plt.show()
     return fig
 
-a = ["/Users/henrykt.haniewicz/Documents/PB_2/J1829+2456/templates/J1829+2456_lbw_nchan1_template.npy", "/Users/henrykt.haniewicz/Documents/PB_2/J1829+2456/templates/J1829+2456_430_nchan1_template.npy"]
-b = ["/Users/henrykt.haniewicz/Documents/PB_2/J1829+2456/templates/J1829+2456_lbw_nchan1_template.npy"]
-c = ["/Users/henrykt.haniewicz/Documents/PB_2/J1829+2456/templates/J1829+2456_lbw_nchan8_template.npy"]
+a = ["/Users/zhn11tau/Documents/PulseBlastV2/J1829+2456/templates/J1829+2456_lbw_nchan1_template.npy", "/Users/zhn11tau/Documents/PulseBlastV2/J1829+2456/templates/J1829+2456_430_nchan1_template.npy"]
+b = ["/Users/zhn11tau/Documents/PulseBlastV2/J1829+2456/templates/J1829+2456_lbw_nchan1_template.npy"]
+c = ["/Users/zhn11tau/Documents/PulseBlastV2/J1829+2456/templates/J1829+2456_lbw_nchan8_template.npy"]
 
 plot_templates( 800, *c )

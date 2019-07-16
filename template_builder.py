@@ -67,6 +67,8 @@ class Template:
         if not os.path.exists( self.pkl_dir ):
             os.makedirs( os.path.join( self.pkl_dir )
 
+        return
+
 
     def prepare_file( self, file ):
 

@@ -78,6 +78,8 @@ class RFIBlaster:
         if not os.path.exists( self.pkl_dir ):
             os.makedirs( os.path.join( self.pkl_dir )
 
+        return
+
 
     def get_method( self ):
         return 'NO METHOD'
