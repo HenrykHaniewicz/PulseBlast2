@@ -348,6 +348,8 @@ class FluxCalibrator:
             pickle.dump( conversion_factors, pickle_out )
             pickle_out.close()
 
+        print(conversion_factors.shape)
+
 
         for directory in self.dirs:
             for psr_file in sorted( os.listdir( directory ) ):
@@ -365,15 +367,18 @@ class FluxCalibrator:
 
                 ar = Archive( os.path.join( directory, psr_file ), verbose = self.verbose )
                 data = ar.data_orig
+                print(data.shape)
                 new_data = []
                 for sub in data:
                     A, B, C, D = self.convert_subint_pol_state( sub, ar.subintheader[ 'POL_TYPE' ], "AABBCRCI", linear = ar.header[ 'FD_POLN' ] )
                     new_data.append( [ A, B ] )
 
+                new_data = np.array( new_data )
+                print(new_data.shape)
+
                 for sub in new_data:
                     sub = sub * conversion_factors
 
-                new_data = np.array( new_data )
                 print(new_data.shape)
 
         return self
