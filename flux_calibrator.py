@@ -348,6 +348,9 @@ class FluxCalibrator:
             pickle.dump( conversion_factors, pickle_out )
             pickle_out.close()
 
+        if type( conversion_factors ) != np.ndarray:
+            conversion_factors = np.array( conversion_factors )
+
         print(conversion_factors.shape)
 
 
