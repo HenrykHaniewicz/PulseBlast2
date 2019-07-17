@@ -212,7 +212,7 @@ class FluxCalibrator:
                                     off = os.path.join( self.cont_dir, dict[ 'OFF' ] )
                                 else:
                                     on, off = [None, None]
-                    a.append( [psr_file, on, off] )
+                    a.append( [psr_file, on, off, psr_mjd] )
 
         return a
 
@@ -220,7 +220,7 @@ class FluxCalibrator:
     def calculate_Jy_per_count( self, cal_file_list ):
 
         """
-        Input list: [ PSR_CAL, ON_CAL, OFF_CAL ]
+        Input list: [ PSR_CAL, ON_CAL, OFF_CAL, CAL_MJD ]
 
         Returns:
         conversion_factor  :  np.ndarray
@@ -236,7 +236,7 @@ class FluxCalibrator:
 
         archives = []
         freqs = []
-        for f in cal_file_list:
+        for f in cal_file_list[:-1]:
             hdul = fits.open( f )
             freqs.append( hdul[3].data[ 'DAT_FREQ' ][0] )
             hdul.close()
@@ -353,6 +353,7 @@ class FluxCalibrator:
 
         print(conversion_factors.shape)
 
+        counter = 0
 
         for directory in self.dirs:
             for psr_file in sorted( os.listdir( directory ) ):
@@ -379,8 +380,10 @@ class FluxCalibrator:
                 new_data = np.array( new_data )
                 print(new_data.shape)
 
+                if psr_mjd is n
+
                 for sub in new_data:
-                    sub = sub * conversion_factors
+                    sub = sub * conversion_factors[ counter ]
 
                 print(new_data.shape)
 
