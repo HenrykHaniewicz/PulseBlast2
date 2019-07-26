@@ -263,7 +263,8 @@ class FluxCalibrator:
 
         Fa, Fb = interp1d( aabb_list[1][ 'FREQS' ], F_cal[0][0], kind='cubic', fill_value = 'extrapolate' ), interp1d( aabb_list[2][ 'FREQS' ], F_cal[0][1], kind='cubic', fill_value = 'extrapolate' )
 
-        conversion_factor = [ Fa( aabb_list[0][ 'FREQS' ] ) / ( H[0][0] - L[0][0] ), Fb( aabb_list[0][ 'FREQS' ] ) / ( H[0][1] - L[0][1] ) ]
+        conversion_factor = [ np.array(Fa( aabb_list[0][ 'FREQS' ] ) / ( H[0][0] - L[0][0] )), np.array( Fb( aabb_list[0][ 'FREQS' ] ) / ( H[0][1] - L[0][1] ) ) ]
+        conversion_factor = np.array( conversion_factor )
 
         return conversion_factor
 
@@ -325,7 +326,8 @@ class FluxCalibrator:
         """
 
         conv_file = "{}_{}_fluxcalibration_conversion_factors.pkl".format( self.psr_name, self.cont_name )
-        conv_abs_path = os.path.join( self.pkl_dir, 'calibration', conv_file )
+        cal_mjd_file = "{}_{}_fluxcalibration_cal_mjds.pkl".format( self.psr_name, self.cont_name )
+        conv_abs_path, cal_abs_path = os.path.join( self.pkl_dir, 'calibration', conv_file ), os.path.join( self.pkl_dir, 'calibration', cal_mjd_file )
 
         if os.path.isfile( conv_abs_path ):
             if self.verbose:
@@ -333,13 +335,20 @@ class FluxCalibrator:
             pickle_in = open( conv_abs_path, "rb" )
             conversion_factors = pickle.load( pickle_in )
             pickle_in.close()
+            pickle_in = open( cal_abs_path, "rb" )
+            cal_mjds = pickle.load( pickle_in )
+            pickle_in.close()
         else:
             if self.verbose:
                 print( "Making new conversion factor list..." )
 
             conversion_factors = []
+            cal_mjds = []
             for e in self.get_closest_contfile():
                 conversion_factors.append( self.calculate_Jy_per_count( e ) )
+                cal_mjds.append( e[3] )
+
+            conversion_factors = np.array( conversion_factors )
 
             if self.verbose:
                 print( "Saving as {}".format( conv_file ) )
@@ -347,11 +356,17 @@ class FluxCalibrator:
             pickle_out = open( conv_abs_path, "wb" )
             pickle.dump( conversion_factors, pickle_out )
             pickle_out.close()
+            pickle_out = open( cal_abs_path, "wb" )
+            pickle.dump( cal_mjds, pickle_out )
+            pickle_out.close()
+
 
         if type( conversion_factors ) != np.ndarray:
             conversion_factors = np.array( conversion_factors )
+        if type( cal_mjds ) != np.ndarray:
+            cal_mjds = np.array( cal_mjds )
 
-        print(conversion_factors.shape)
+        print(conversion_factors)
 
         counter = 0
 
@@ -371,21 +386,24 @@ class FluxCalibrator:
 
                 ar = Archive( os.path.join( directory, psr_file ), verbose = self.verbose )
                 data = ar.data_orig
-                print(data.shape)
                 new_data = []
                 for sub in data:
                     A, B, C, D = self.convert_subint_pol_state( sub, ar.subintheader[ 'POL_TYPE' ], "AABBCRCI", linear = ar.header[ 'FD_POLN' ] )
                     new_data.append( [ A, B ] )
 
                 new_data = np.array( new_data )
-                print(new_data.shape)
 
-                if psr_mjd is n
 
-                for sub in new_data:
-                    sub = sub * conversion_factors[ counter ]
-
-                print(new_data.shape)
+                while psr_mjd != cal_mjds[ counter ]:
+                    print( psr_mjd, cal_mjds[ counter ] )
+                    counter += 1
+                    if counter >= len( conversion_factors ):
+                        break
+                else:
+                    for sub in new_data:
+                        sub = conversion_factors[ counter ] * sub
+                        print(sub.shape)
+                    counter = 0
 
         return self
 

@@ -65,8 +65,7 @@ class Template:
         if not os.path.exists( self.temp_dir ):
             os.makedirs( self.temp_dir )
         if not os.path.exists( self.pkl_dir ):
-            os.makedirs( os.path.join( self.pkl_dir )
-
+            os.makedirs( os.path.join( self.pkl_dir ) )
         return self
 
 
@@ -126,7 +125,7 @@ class Template:
         Script to create the template
         """
 
-        for directory in sorted( self.dirs ):
+        for directory in self.dirs:
             for f in sorted( os.listdir( directory ) ):
                 template, ignore_list, pkl_name = self.load_template()
 
@@ -222,7 +221,7 @@ class FD_Template( Template ):
         else:
             self.dirs = dirs
         self.verbose = verbose
-        self.pklfile = os.path.join( pkl_dir, "{0}_{1}_nchan{2}.pkl".format( self.psr_name, self.frontend, self.subbands ) )
+        self.pklfile = os.path.join( self.pkl_dir, "{0}_{1}_nchan{2}.pkl".format( self.psr_name, self.frontend, self.subbands ) )
         self.savefile = "{0}_{1}_nchan{2}_template.npy".format( self.psr_name, self.frontend, self.subbands )
 
 

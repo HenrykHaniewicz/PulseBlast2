@@ -57,7 +57,7 @@ class RFIBlaster:
             self.dirs = [self.saveddata_dir]
         else:
             self.dirs = dirs
-        self.pklfile = os.path.join( pkl_dir, "{}_rfimitigation_save.pkl".format( self.psr_name ) )
+        self.pklfile = os.path.join( self.pkl_dir, "{}_rfimitigation_save.pkl".format( self.psr_name ) )
         self.iterations = iterations
         self.epoch_average = epoch_avg
         self.method = self.get_method()
@@ -76,9 +76,8 @@ class RFIBlaster:
         if not os.path.exists( self.saveddata_dir ):
             os.makedirs( self.saveddata_dir )
         if not os.path.exists( self.pkl_dir ):
-            os.makedirs( os.path.join( self.pkl_dir )
-
-        return
+            os.makedirs( os.path.join( self.pkl_dir ) )
+        return self
 
 
     def get_method( self ):
@@ -87,7 +86,7 @@ class RFIBlaster:
     def load_template( self, dir, filename ):
 
         try:
-            template = np.load( dir + filename )
+            template = np.load( os.path.join( dir, filename ) )
         except FileNotFoundError:
             raise TemplateLoadError( "n = 1 template not found in {}".format( dir ) )
 
@@ -148,7 +147,7 @@ class RFIBlaster:
             print( "Template not found" )
             reply = str( input( "Would you like to make a suitable one? (y / n)" ) ).lower().strip()
             if reply[0] == 'y':
-                temp = FD_Template( self.psr_name, fe, 1, "templates/", False, *self.dirs )
+                temp = FD_Template( self.psr_name, fe, 1, template_dir = "templates", verbose = self.verbose, *self.dirs )
                 template = temp.make_template()
             else:
                 raise TemplateLoadError( "You can make a suitable template via the following command: python template_builder.py psr_name -b [frontend] -d [dirs]" )
@@ -368,6 +367,6 @@ class SigmaClip_Mitigator( RFIBlaster ):
 if __name__ == "__main__":
 
     np.set_printoptions( threshold = np.inf )
-    v = ["/Users/zhn11tau/Documents/DATA/1829+2456_2017/"]
+    v = ["/Users/zhn11tau/Documents/DATA/J1829+2456/1829+2456_2017/"]
     s = SigmaClip_Mitigator( "J1829+2456", *v, iterations = 5, epoch_avg = True, verbose = True )
     s.mitigation_setup()

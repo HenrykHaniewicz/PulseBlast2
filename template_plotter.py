@@ -1,12 +1,14 @@
 # Latex template plotter
 
+import utils.mathUtils as mth
 import numpy as np
 import matplotlib.pyplot as plt
 
-clr = 'b'
+clr = 'k'
+smoothing_window = 101
 
 
-def plot_templates( BW, *filenames ):
+def plot_templates( BW, *filenames, smoothing = False ):
 
     fig = plt.figure( figsize = ( 8, 8 ) )
     plt.rc( 'text', usetex = True )
@@ -19,6 +21,9 @@ def plot_templates( BW, *filenames ):
         temp = np.load( filenames[0] )
         lin = np.linspace( 0, 1, temp.shape[-1] )
         if temp.ndim == 1:
+            if smoothing:
+                temp = mth.smooth( temp, smoothing_window )
+                lin = np.linspace( 0, 1, temp.shape[-1] )
             ax = fig.add_subplot(111)
             ax.plot( lin, temp, color = clr )
             ax.set_xlabel(r'Phase')
@@ -28,8 +33,16 @@ def plot_templates( BW, *filenames ):
             n_chan = temp.shape[0]
             c_sqrt = np.ceil( np.sqrt( n_chan ) )
             ax = []
+            if smoothing:
+                t = []
             for i, chan in enumerate( temp ):
                 ax.append( fig.add_subplot( c_sqrt, c_sqrt, i+1 ) )
+                if smoothing:
+                    t.append( mth.smooth( temp[i], smoothing_window ) )
+            if smoothing:
+                temp = np.array( t )
+                print(temp.shape)
+                lin = np.linspace( 0, 1, temp[0].shape[-1] )
             for j, axis in enumerate( ax ):
                 axis.plot( lin, temp[j], color = clr )
                 axis.ticklabel_format( style = 'sci', axis = 'y', scilimits = (-2, 2) )
@@ -46,7 +59,11 @@ def plot_templates( BW, *filenames ):
                 raise IndexError( "Can't plot more than one template in more than one frequency..." )
             temps.append( t )
         for i, tmp in enumerate( temps ):
-            lin = np.linspace( 0, 1, len(tmp) )
+            if smoothing:
+                temps[i] = mth.smooth( tmp, smoothing_window )
+                lin = np.linspace( 0, 1, temps[0].shape[-1] )
+            else:
+                lin = np.linspace( 0, 1, len(tmp) )
             ax.append( fig.add_subplot( 2, 1, i+1 ) )
         for j, axis in enumerate( ax ):
             axis.plot( lin, temps[j], color = clr )
@@ -70,4 +87,4 @@ a = ["/Users/zhn11tau/Documents/PulseBlastV2/J1829+2456/templates/J1829+2456_lbw
 b = ["/Users/zhn11tau/Documents/PulseBlastV2/J1829+2456/templates/J1829+2456_lbw_nchan1_template.npy"]
 c = ["/Users/zhn11tau/Documents/PulseBlastV2/J1829+2456/templates/J1829+2456_lbw_nchan8_template.npy"]
 
-plot_templates( 800, *c )
+plot_templates( 800, *c, smoothing = True )

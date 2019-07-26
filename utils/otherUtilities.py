@@ -22,8 +22,9 @@ def getRMSArrayProperties( array, mask, out_tol = 1.5 ):
 
     # Return the array of RMS values for each profile
     r = calculate_array_rms( array, mask, True )
+    print(array.shape)
     l_shape = 1
-    for s in array.shape:
+    for s in array.shape[:-1]:
         l_shape *= s
 
     # Reshape RMS array to be linear and store in a new RMS array

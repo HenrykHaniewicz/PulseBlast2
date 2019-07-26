@@ -64,6 +64,19 @@ def calculate_array_rms( array, mask = None, nan_mask = False ):
 
     return rms
 
+# Taken from scipy-cookbook.readthedocs.io/items/SignalSmooth.html
+def smooth( x, window_len = 11, window = 'hanning' ):
+
+    s = np.r_[x[window_len - 1:0:-1], x, x[-2:-window_len - 1:-1]]
+    if window == 'flat':  # moving average
+        w = np.ones(window_len, 'd')
+    else:
+        w = eval('np.' + window + '(window_len)')
+
+    y = np.convolve(w / w.sum(), s, mode='valid')
+
+    return y
+
 
 def normalizeToMax( array ):
 
