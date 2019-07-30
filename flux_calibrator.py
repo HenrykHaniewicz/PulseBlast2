@@ -378,7 +378,10 @@ class FluxCalibrator:
                         print( "Opening {}".format( psr_file ) )
                 except OSError:
                     if self.verbose:
-                        print( "Couldn't open {}".format( psr_file ) )
+                        try:
+                            print( "Couldn't open {}".format( psr_file ) )
+                        except UnicodeEncodeError:
+                            print( "Couldn't open {}".format( psr_file.encode( "utf-8" ) ) )
                     continue
 
                 if obs_mode != "PSR":

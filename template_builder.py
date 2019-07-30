@@ -134,13 +134,14 @@ class Template:
                         print( "{} has already been added to the template.".format( f ) )
                     continue
 
-                prep = self.prepare_file( directory + f )
+                prep = self.prepare_file( os.path.join( directory, f ) )
                 if prep == -1:
                     if self.verbose:
                         print( "Preparation of file {} failed. Skipping file...".format( f ) )
                     continue
                 else:
                     d, c, b = prep[0], prep[1], prep[2]
+
 
                 if template is None and c > 1:
                     if self.verbose:
