@@ -186,10 +186,14 @@ def find_cal_switching_points( vector, start_duty = 0.0, duty = 0.5 ):
 
     return start, bin_start, bin_end
 
-def prepare_cal_profile( prof, start_duty = 0.0, duty = 0.5, r_err = 8 ):
+def prepare_cal_profile( vector, start_duty = 0.0, duty = 0.5, r_err = 8 ):
 
-    profile = prof
-    bin_params = find_cal_switching_points( profile, start_duty, duty )
+    profile = vector
+    start = math.floor( len( vector ) * start_duty )
+
+    bin_start = math.floor( len( vector ) * ( start_duty + duty ) )
+    bin_end = bin_start + ( math.floor( len( vector ) * duty ) )
+    bin_params = [ start, bin_start, bin_end ]
 
     low_mean = np.mean( profile[ bin_params[0] : bin_params[1] ] )
     high_mean = np.mean( profile[ bin_params[1] : bin_params[2] ] )

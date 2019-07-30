@@ -3,21 +3,21 @@
 
 class ArgumentError( Exception ):
 
-    "Any place where incorrect or invalid arguments might exist should utilize this class."
+    "Arguments on CLI do not match known arguments"
 
     def __init__( self, message ):
         self.message = message
 
 class DimensionError( Exception ):
 
-    "Raise when the number of dimensions in an array is not desired."
+    "Mismatch of array dimensions"
 
     def __init__( self, message ):
         self.message = message
 
 class TemplateLoadError( Exception ):
 
-    ""
+    "There was a problem loading the template profile"
 
     def __init__( self, message ):
         self.message = message

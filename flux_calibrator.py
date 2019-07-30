@@ -7,9 +7,9 @@ Smart file name handling for both load and save
     Try to load
 Only works for Format 2 at the moment...
 
-On / Off dict --- [{ 'MJD' : mjd, 'ON' : on_file, 'OFF' : off_file, 'FE' : fe, 'NUM' : num }]
-
 DO NOT MAKE 'C++' CODE AGAIN!!!!!!! THIS IS PYTHON
+
+CAL_DICT_LIST --- [ [{ 'ARC' : arc, 'DATA' : aabb_data, 'S_DUTY' : arc.getValue( 'CAL_PHS' ) , 'DUTY' : arc.getValue( 'CAL_DCYC' ), 'BW' : arc.getBandwidth(), 'CTR_F' : arc.getCenterFrequency( weighted = True ) }, {  }, {  }], [{}{}{}] ]
 """
 
 # Imports
@@ -18,6 +18,7 @@ import os
 import math
 import pickle
 import matplotlib.pyplot as plt
+from scipy.interpolate import interp1d
 
 from pypulse.archive import Archive
 
@@ -51,11 +52,11 @@ class FluxCalibrator:
         Displays more information to the console
     """
 
-    def __init__( self, psr_name, cont_name, *dirs, cont_dir = None, saveddata_dir = "data/", verbose = False ):
+    def __init__( self, psr_name, cont_name, *dirs, cont_dir = None, saveddata_dir = "data", verbose = False ):
 
         self.psr_name = str( psr_name )
         self.cont_name = str( cont_name )
-        self.saveddata_dir = self.psr_name + '/' + saveddata_dir
+        self.saveddata_dir = os.path.join( self.psr_name, saveddata_dir )
 
         # Directory setup
         self.check_directories()
@@ -71,9 +72,9 @@ class FluxCalibrator:
             self.cont_dir = cont_dir
 
         self.verbose = verbose
-        self.pkl_dir = os.path.join( file_root, self.psr_name, 'pickle_dumps/' )
+        self.pkl_dir = os.path.join( file_root, self.psr_name, 'pickle_dumps' )
         self.pklfile = os.path.join( self.pkl_dir, "{}_calibration_save.pkl".format( self.psr_name ) )
-        self.dirs = ["/Users/zhn11tau/Documents/DATA/1829+2456_2017/"]
+        self.dirs = ["/Users/zhn11tau/Documents/DATA/J1829+2456/1829+2456_2017/"]
 
     def __repr__( self ):
         return "FluxCalibrator( psr_name = {}, cont_name = {} )".format( self.psr_name, self.cont_name )
@@ -211,12 +212,21 @@ class FluxCalibrator:
                                     off = os.path.join( self.cont_dir, dict[ 'OFF' ] )
                                 else:
                                     on, off = [None, None]
-                    a.append( [psr_file, on, off] )
+                    a.append( [psr_file, on, off, psr_mjd] )
 
         return a
 
 
-    def calculate_Fcal_functions( self, cal_file_list ):
+    def calculate_Jy_per_count( self, cal_file_list ):
+
+        """
+        Input list: [ PSR_CAL, ON_CAL, OFF_CAL, CAL_MJD ]
+
+        Returns:
+        conversion_factor  :  np.ndarray
+        """
+
+        G = 11.0
 
         if type( cal_file_list ) != np.ndarray:
             cal_file_list = np.array( cal_file_list )
@@ -225,37 +235,184 @@ class FluxCalibrator:
             raise ValueError( "Should be a vector" )
 
         archives = []
-        for f in cal_file_list:
+        freqs = []
+        for f in cal_file_list[:-1]:
+            hdul = fits.open( f )
+            freqs.append( hdul[3].data[ 'DAT_FREQ' ][0] )
+            hdul.close()
             archives.append( Archive( f, verbose = self.verbose ) )
 
-        polarizations = []
 
-        for t in archives:
-            t.tscrunch()
-            A, B, C, D = self.convert_subint_pol_state( t.getData(), t.subintheader[ 'POL_TYPE' ], "AABBCRCI", linear = t.header[ 'FD_POLN' ] )
-            polarizations.append( [ A, B ] )
+        aabb_list = []
 
-        polarizations = np.array( polarizations )
-        psr_cal, on_cal, off_cal = archives
-
+        for i, arc in enumerate( archives ):
+            arc.tscrunch()
+            A, B, C, D = self.convert_subint_pol_state( arc.getData(), arc.subintheader[ 'POL_TYPE' ], "AABBCRCI", linear = arc.header[ 'FD_POLN' ] )
+            l = { 'ARC' : arc, 'DATA' : [ A, B ], 'FREQS' : freqs[i], 'S_DUTY' : arc.getValue( 'CAL_PHS' ) , 'DUTY' : arc.getValue( 'CAL_DCYC' ), 'BW' : arc.getBandwidth() }
+            aabb_list.append( l )
 
 
-        return self
+        H, L, T0 = self._prepare_calibration( aabb_list )
+        F_ON = ( H[1]/L[1] ) - 1
+        F_OFF = ( H[2]/L[2] ) - 1
 
-    def cal_to_count( self ):
+        C0 = T0[1:] / ( ( 1 / F_ON ) - ( 1 / F_OFF ) )
+        T_sys = C0 / F_OFF
+        F_cal = ( T_sys * F_OFF ) / G
 
 
-        return
+        Fa, Fb = interp1d( aabb_list[1][ 'FREQS' ], F_cal[0][0], kind='cubic', fill_value = 'extrapolate' ), interp1d( aabb_list[2][ 'FREQS' ], F_cal[0][1], kind='cubic', fill_value = 'extrapolate' )
+
+        conversion_factor = [ np.array(Fa( aabb_list[0][ 'FREQS' ] ) / ( H[0][0] - L[0][0] )), np.array( Fb( aabb_list[0][ 'FREQS' ] ) / ( H[0][1] - L[0][1] ) ) ]
+        conversion_factor = np.array( conversion_factor )
+
+        return conversion_factor
+
+
+    def _prepare_calibration( self, archive_list, r_err = 8 ):
+
+        H = []
+        L = []
+        T0 = []
+
+        for dict in archive_list:
+            all_high_means = []
+            all_low_means = []
+            T0_pol = []
+
+            for pol in dict[ 'DATA' ]:
+                high_means = []
+                low_means = []
+                T0_chan = []
+
+                for i, channel in enumerate( pol ):
+
+                    flux = getFlux( float( dict[ 'FREQS' ][i]/1000 ), self.cont_name, False )
+
+                    start_bin = math.floor( len( channel ) * dict[ 'S_DUTY' ] )
+                    mid_bin = math.floor( len( channel ) * ( dict[ 'S_DUTY' ] + dict[ 'DUTY' ] ) )
+                    end_bin = mid_bin + ( math.floor( len( channel ) * dict[ 'DUTY' ] ) )
+                    bin_params = [ start_bin, mid_bin, end_bin ]
+
+                    low_mean = np.mean( channel[ bin_params[0] : bin_params[1] ] )
+                    high_mean = np.mean( channel[ bin_params[1] : bin_params[2] ] )
+
+                    low_mean = round( low_mean, r_err )
+                    high_mean = round( high_mean, r_err )
+
+                    high_means.append( high_mean )
+                    low_means.append( low_mean )
+                    T0_chan.append( flux )
+
+                all_high_means.append( high_means )
+                all_low_means.append( low_means )
+                T0_pol.append( T0_chan )
+
+            H.append( all_high_means )
+            L.append( all_low_means )
+            T0.append( T0_pol )
+
+        H = np.array(H)
+        L = np.array(L)
+        T0 = np.array(T0)
+
+        return H, L, T0
 
 
     def calibrate( self ):
 
+        """
+        Master calibration method
+        """
+
+        conv_file = "{}_{}_fluxcalibration_conversion_factors.pkl".format( self.psr_name, self.cont_name )
+        cal_mjd_file = "{}_{}_fluxcalibration_cal_mjds.pkl".format( self.psr_name, self.cont_name )
+        conv_abs_path, cal_abs_path = os.path.join( self.pkl_dir, 'calibration', conv_file ), os.path.join( self.pkl_dir, 'calibration', cal_mjd_file )
+
+        if os.path.isfile( conv_abs_path ):
+            if self.verbose:
+                print( "Loading previously saved conversion factor data..." )
+            pickle_in = open( conv_abs_path, "rb" )
+            conversion_factors = pickle.load( pickle_in )
+            pickle_in.close()
+            pickle_in = open( cal_abs_path, "rb" )
+            cal_mjds = pickle.load( pickle_in )
+            pickle_in.close()
+        else:
+            if self.verbose:
+                print( "Making new conversion factor list..." )
+
+            conversion_factors = []
+            cal_mjds = []
+            for e in self.get_closest_contfile():
+                conversion_factors.append( self.calculate_Jy_per_count( e ) )
+                cal_mjds.append( e[3] )
+
+            conversion_factors = np.array( conversion_factors )
+
+            if self.verbose:
+                print( "Saving as {}".format( conv_file ) )
+
+            pickle_out = open( conv_abs_path, "wb" )
+            pickle.dump( conversion_factors, pickle_out )
+            pickle_out.close()
+            pickle_out = open( cal_abs_path, "wb" )
+            pickle.dump( cal_mjds, pickle_out )
+            pickle_out.close()
 
 
-        return
+        if type( conversion_factors ) != np.ndarray:
+            conversion_factors = np.array( conversion_factors )
+        if type( cal_mjds ) != np.ndarray:
+            cal_mjds = np.array( cal_mjds )
+
+        print(conversion_factors)
+
+        counter = 0
+
+        for directory in self.dirs:
+            for psr_file in sorted( os.listdir( directory ) ):
+                try:
+                    hdul, psr_mjd, psr_fe, obs_num, obs_mode = self.hdul_setup( directory, psr_file, False )
+                    if self.verbose:
+                        print( "Opening {}".format( psr_file ) )
+                except OSError:
+                    if self.verbose:
+                        print( "Couldn't open {}".format( psr_file ) )
+                    continue
+
+                if obs_mode != "PSR":
+                    continue
+
+                ar = Archive( os.path.join( directory, psr_file ), verbose = self.verbose )
+                data = ar.data_orig
+                new_data = []
+                for sub in data:
+                    A, B, C, D = self.convert_subint_pol_state( sub, ar.subintheader[ 'POL_TYPE' ], "AABBCRCI", linear = ar.header[ 'FD_POLN' ] )
+                    new_data.append( [ A, B ] )
+
+                new_data = np.array( new_data )
+
+
+                while psr_mjd != cal_mjds[ counter ]:
+                    print( psr_mjd, cal_mjds[ counter ] )
+                    counter += 1
+                    if counter >= len( conversion_factors ):
+                        break
+                else:
+                    for sub in new_data:
+                        sub = conversion_factors[ counter ] * sub
+                        print(sub.shape)
+                    counter = 0
+
+        return self
 
 
     def convert_subint_pol_state( self, subint, input, output, linear = 'LIN' ):
+
+        """
+
+        """
 
         if input == output:
             out_S = subint
@@ -286,8 +443,11 @@ class FluxCalibrator:
                 C = Q/2.0
                 D = U/2.0
             out_S = [ A, B, C, D ]
-        if type( subint ) == np.ndarray:
-            out_S = np.array( out_S )
+        else:
+            print("WTF")
+
+
+        out_S = np.array( out_S )
 
         return out_S
 
@@ -298,8 +458,6 @@ if __name__ == "__main__":
 
     n = "J1829+2456"
     cn = "B1442"
-    c_d = "/Users/zhn11tau/Documents/DATA/cont/"
-    c = FluxCalibrator( n, cn, cont_dir = c_d, verbose = False )
-    cont_match = c.get_closest_contfile()
-    for e in cont_match:
-        c.calculate_Fcal_functions( e )
+    c_d = "/Users/zhn11tau/Documents/DATA/J1829+2456/cont/"
+    c = FluxCalibrator( n, cn, cont_dir = c_d, verbose = True )
+    c.calibrate()
