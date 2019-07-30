@@ -171,7 +171,7 @@ class RFIBlaster:
                 archive.setWeights( 0.0, f = elem )
         data = archive.getData()
 
-        return data
+        return data, archive
 
 
     def mitigate( self, file, data, p, template, archive, ignore_list, keep_dims = False ):
@@ -185,7 +185,7 @@ class RFIBlaster:
 
     def mitigation_setup( self ):
 
-        for directory in sorted( self.dirs ):
+        for directory in self.dirs:
             for f in sorted( os.listdir( directory ) ):
 
                 root, ext = os.path.splitext( f )
@@ -209,10 +209,13 @@ class RFIBlaster:
                         print( "File {} does not match file in saved data. Skipping...".format( f ) )
                     continue
 
-                prep = self.prepare_file( directory + f )
+                prep = self.prepare_file( os.path.join( directory, f ) )
                 if prep == -1:
                     if self.verbose:
-                        print( "Preparation of file {} failed. Skipping...".format( f ) )
+                        try:
+                            print( "Preparation of file {} failed. Skipping...".format( f ) )
+                        except UnicodeEncodeError:
+                            print( "Preparation of file {} failed. Skipping...".format( f.encode('utf-8') ) )
                     continue
 
                 ar, template, fe, mjd = prep[0], prep[1], prep[2], prep[3]
@@ -220,11 +223,17 @@ class RFIBlaster:
                 # Mitigation step
 
                 for it in np.arange( self.iterations ):
-                    data, mu, sigma = self.mitigate( f, data, p, template, ar, ignore_list )
+                    if self.epoch_average and it != 0:
+                        ar.tscrunch()
+                    data, mu, sigma, ar = self.mitigate( f, ar.getData(), p, template, ar, ignore_list )
+                    print(mu, sigma)
+                    ar.setData( data )
+                    if self.verbose:
+                        print( "Data loaded for iteration {}".format( it + 1 ) )
                     try:
-                        if (old_mu - mu < TOL) and (old_s - sigma < TOL):
+                        if (abs( old_mu - mu ) < TOL) and (abs( old_s - sigma ) < TOL):
                             if self.verbose:
-                                print( "Stopping..." )
+                                print( "Stopping after iteration {} as data is fully excised.".format( it + 1 ) )
                             break
                     except NameError:
                         pass
@@ -235,7 +244,7 @@ class RFIBlaster:
                 save_fn = "{0}_{1}_{2}_{3}".format( self.psr_name, mjd, fe, obs_num )
                 save_fn += ext
                 #np.save( self.saveddata_dir + save_fn, data )
-                ar.save( self.saveddata_dir + save_fn ) # Create routine that overwrites old files
+                ar.save( os.path.join( self.saveddata_dir, save_fn ) ) # Create routine that overwrites old files
                 ignore_list.append( ig_dict )
                 save_dict = self.save_position( None, None, [0, 0], ignore_list )
 
@@ -350,7 +359,7 @@ class SigmaClip_Mitigator( RFIBlaster ):
             data = archive.getData()
 
         templateMask = pu.get_1D_OPW_mask( template, windowsize = (archive.getNbin() - 100) )
-        rmsArray, linearRmsArray, mu, sigma = u.getRMSArrayProperties( data, templateMask, 1.5 )
+        rmsArray, linearRmsArray, mu, sigma = u.getRMSArrayProperties( data, templateMask, 1.5 ) # Needs to input 2D array
 
         # Creates the histogram
         pltu.histogram_and_curves( linearRmsArray, mean = mu, std_dev = sigma, x_axis = 'Root Mean Squared', y_axis = 'Frequency Density', title = r'$\mu={},\ \sigma={}$'.format( mu, sigma ), show = True, curve_list = [spyst.norm.pdf] )
@@ -360,9 +369,12 @@ class SigmaClip_Mitigator( RFIBlaster ):
             archive.reset()
             data = archive.getData()
 
-        data = self.zap( file, archive, p, ignore_list, np.asarray( rejectionCriterion ).nonzero()[ rejectionCriterion.ndim - 1 ] )
+        if self.verbose:
+            print( "Rejection criterion created." )
 
-        return data, mu, sigma
+        data, archive = self.zap( file, archive, p, ignore_list, np.asarray( rejectionCriterion ).nonzero()[ rejectionCriterion.ndim - 1 ] )
+
+        return data, mu, sigma, archive
 
 if __name__ == "__main__":
 
