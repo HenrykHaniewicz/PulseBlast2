@@ -11,6 +11,8 @@ Modular saving (with detailed ignore list)
     save_dict = { 'FILE' : filename, 'DATA' : self.data, 'POS' : [ s, c ], 'IG_LIST' : [ {}, ... ] }
 """
 
+# PB.py dir_file.txt -p ["J1829+2456", "J1851+00"] -c -rs
+
 # Local imports
 import utils.pulsarUtilities as pu
 import utils.plotUtils as pltu
@@ -186,6 +188,10 @@ class RFIBlaster:
     def mitigation_setup( self ):
 
         for directory in self.dirs:
+
+            if not os.path.exists( directory ):
+                continue
+                
             for f in sorted( os.listdir( directory ) ):
 
                 root, ext = os.path.splitext( f )
@@ -215,31 +221,34 @@ class RFIBlaster:
                         try:
                             print( "Preparation of file {} failed. Skipping...".format( f ) )
                         except UnicodeEncodeError:
-                            print( "Preparation of file {} failed. Skipping...".format( f.encode('utf-8') ) )
+                            print( "Preparation of file {} failed. Skipping...".format( f.encode( 'utf-8' ) ) )
                     continue
 
                 ar, template, fe, mjd = prep[0], prep[1], prep[2], prep[3]
 
                 # Mitigation step
-
-                for it in np.arange( self.iterations ):
-                    if self.epoch_average and it != 0:
-                        ar.tscrunch()
-                    data, mu, sigma, ar = self.mitigate( f, ar.getData(), p, template, ar, ignore_list )
-                    print(mu, sigma)
-                    ar.setData( data )
-                    if self.verbose:
-                        print( "Data loaded for iteration {}".format( it + 1 ) )
-                    try:
-                        if (abs( old_mu - mu ) < TOL) and (abs( old_s - sigma ) < TOL):
-                            if self.verbose:
-                                print( "Stopping after iteration {} as data is fully excised.".format( it + 1 ) )
-                            break
-                    except NameError:
-                        pass
-                    old_mu, old_s = mu, sigma
+                if self.iterations != 1:
+                    for it in np.arange( self.iterations ):
+                        if it == np.arange( self.iterations )[-1]:
+                            data, mu, sigma, ar = self.mitigate( f, data, p, template, ar, ignore_list )
+                        else:
+                            data, mu, sigma, ar = self.mitigate( f, data, p, template, ar, ignore_list, keep_dims = True )
+                        if self.verbose:
+                            print( "Data loaded for iteration {}".format( it + 1 ) )
+                        try:
+                            if (abs( old_mu - mu ) < TOL) and (abs( old_s - sigma ) < TOL):
+                                if self.verbose:
+                                    print( "Stopping after iteration {} as data is fully excised.".format( it + 1 ) )
+                                break
+                        except NameError:
+                            pass
+                        old_mu, old_s = mu, sigma
+                else:
+                    data, mu, sigma, ar = self.mitigate( f, data, p, template, ar, ignore_list )
 
                 # End mitigation
+
+                ar.setData( data )
 
                 save_fn = "{0}_{1}_{2}_{3}".format( self.psr_name, mjd, fe, obs_num )
                 save_fn += ext
