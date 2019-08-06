@@ -152,10 +152,8 @@ else:
         psr_names.append(commands[1])
 
 #testing
-    print(commands)
     del commands[0]
     del commands[0]
-    print(commands)
 
     if "-v" in commands:
         try:

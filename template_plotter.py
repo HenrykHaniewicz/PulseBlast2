@@ -86,5 +86,6 @@ def plot_templates( BW, *filenames, smoothing = False ):
 a = ["/Users/zhn11tau/Documents/PulseBlastV2/J1829+2456/templates/J1829+2456_lbw_nchan1_template.npy", "/Users/zhn11tau/Documents/PulseBlastV2/J1829+2456/templates/J1829+2456_430_nchan1_template.npy"]
 b = ["/Users/zhn11tau/Documents/PulseBlastV2/J1829+2456/templates/J1829+2456_lbw_nchan1_template.npy"]
 c = ["/Users/zhn11tau/Documents/PulseBlastV2/J1829+2456/templates/J1829+2456_lbw_nchan8_template.npy"]
+d = ["/Users/zhn11tau/Documents/PulseBlastV2/J1851+00/templates/J1851+00_lbw_nchan1_template.npy"]
 
-plot_templates( 800, *c, smoothing = True )
+plot_templates( 100, *d, smoothing = True )

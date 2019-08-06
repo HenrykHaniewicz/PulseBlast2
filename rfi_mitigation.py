@@ -191,7 +191,7 @@ class RFIBlaster:
 
             if not os.path.exists( directory ):
                 continue
-                
+
             for f in sorted( os.listdir( directory ) ):
 
                 root, ext = os.path.splitext( f )
@@ -226,29 +226,48 @@ class RFIBlaster:
 
                 ar, template, fe, mjd = prep[0], prep[1], prep[2], prep[3]
 
-                # Mitigation step
-                if self.iterations != 1:
-                    for it in np.arange( self.iterations ):
-                        if it == np.arange( self.iterations )[-1]:
-                            data, mu, sigma, ar = self.mitigate( f, data, p, template, ar, ignore_list )
-                        else:
-                            data, mu, sigma, ar = self.mitigate( f, data, p, template, ar, ignore_list, keep_dims = True )
-                        if self.verbose:
-                            print( "Data loaded for iteration {}".format( it + 1 ) )
-                        try:
-                            if (abs( old_mu - mu ) < TOL) and (abs( old_s - sigma ) < TOL):
-                                if self.verbose:
-                                    print( "Stopping after iteration {} as data is fully excised.".format( it + 1 ) )
-                                break
-                        except NameError:
-                            pass
-                        old_mu, old_s = mu, sigma
-                else:
-                    data, mu, sigma, ar = self.mitigate( f, data, p, template, ar, ignore_list )
+                # # Mitigation step
+                # if self.iterations != 1:
+                #     for it in np.arange( self.iterations ):
+                #         if it == np.arange( self.iterations )[-1]:
+                #             data, mu, sigma, ar = self.mitigate( f, data, p, template, ar, ignore_list )
+                #         else:
+                #             data, mu, sigma, ar = self.mitigate( f, data, p, template, ar, ignore_list, keep_dims = True )
+                #         if self.verbose:
+                #             print( "Data loaded for iteration {}".format( it + 1 ) )
+                #         try:
+                #             if (abs( old_mu - mu ) < TOL) and (abs( old_s - sigma ) < TOL):
+                #                 if self.verbose:
+                #                     print( "Stopping after iteration {} as data is fully excised.".format( it + 1 ) )
+                #                 break
+                #         except NameError:
+                #             pass
+                #         old_mu, old_s = mu, sigma
+                # else:
+                #     if self.verbose:
+                #         print( "Only 1 iteration:" )
+                #     data, mu, sigma, ar = self.mitigate( f, data, p, template, ar, ignore_list )
+
+                for it in np.arange( self.iterations ):
+                    if self.epoch_average and it != 0:
+                        ar.tscrunch()
+                    data, mu, sigma, ar = self.mitigate( f, ar.getData(), p, template, ar, ignore_list )
+                    ar.setData( data )
+                    if self.verbose:
+                        print( "Data loaded for iteration {}".format( it + 1 ) )
+                    try:
+                        if (abs( old_mu - mu ) < TOL) and (abs( old_s - sigma ) < TOL):
+                            if self.verbose:
+                                print( "Stopping after iteration {} as data is fully excised.".format( it + 1 ) )
+                            break
+                    except NameError:
+                        pass
+                    old_mu, old_s = mu, sigma
 
                 # End mitigation
 
-                ar.setData( data )
+                #data, mu, sigma, ar = self.mitigate( f, data, p, template, ar, ignore_list )
+                #ar.setData( data )
 
                 save_fn = "{0}_{1}_{2}_{3}".format( self.psr_name, mjd, fe, obs_num )
                 save_fn += ext
@@ -371,9 +390,10 @@ class SigmaClip_Mitigator( RFIBlaster ):
         rmsArray, linearRmsArray, mu, sigma = u.getRMSArrayProperties( data, templateMask, 1.5 ) # Needs to input 2D array
 
         # Creates the histogram
-        pltu.histogram_and_curves( linearRmsArray, mean = mu, std_dev = sigma, x_axis = 'Root Mean Squared', y_axis = 'Frequency Density', title = r'$\mu={},\ \sigma={}$'.format( mu, sigma ), show = True, curve_list = [spyst.norm.pdf] )
+        pltu.histogram_and_curves( linearRmsArray, mean = mu, std_dev = sigma, bins = (archive.getNchan() // 4), x_axis = 'Root Mean Squared', y_axis = 'Frequency Density', title = r'$\mu={},\ \sigma={}$'.format( mu, sigma ), show = True, curve_list = [spyst.norm.pdf] )
 
         rejectionCriterion = mathu.chauvenet( rmsArray, mu, sigma, 3 )
+
         if not keep_dims:
             archive.reset()
             data = archive.getData()
@@ -389,5 +409,5 @@ if __name__ == "__main__":
 
     np.set_printoptions( threshold = np.inf )
     v = ["/Users/zhn11tau/Documents/DATA/J1829+2456/1829+2456_2017/"]
-    s = SigmaClip_Mitigator( "J1829+2456", *v, iterations = 5, epoch_avg = True, verbose = True )
+    s = SigmaClip_Mitigator( "J1829+2456", *v, iterations = 1, epoch_avg = True, verbose = True )
     s.mitigation_setup()

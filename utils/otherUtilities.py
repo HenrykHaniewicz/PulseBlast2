@@ -22,7 +22,6 @@ def getRMSArrayProperties( array, mask, out_tol = 1.5 ):
 
     # Return the array of RMS values for each profile
     r = calculate_array_rms( array, mask, True )
-    print(array.shape)
     l_shape = 1
     for s in array.shape[:-1]:
         l_shape *= s
@@ -32,8 +31,8 @@ def getRMSArrayProperties( array, mask, out_tol = 1.5 ):
 
     # Mean and standard deviation
     m, excess = np.nanmedian( l ), out_tol * spyst.iqr( l, nan_policy = 'omit' )
-    outlier_bounds = [ np.nanpercentile( l, 25 ), np.nanpercentile( l, 75 ) ]
-    outlier_bounds = [ outlier_bounds[0] - excess, outlier_bounds[1] + excess ]
+    outlier_bounds = [ 0, np.nanpercentile( l, 75 ) ]
+    outlier_bounds = [ outlier_bounds[0], outlier_bounds[1] + excess ]
     array_to_do_calculations = l[ (l >= outlier_bounds[0]) & (l <= outlier_bounds[1]) ]
     mu, s = np.nanmean( array_to_do_calculations ), np.nanstd( array_to_do_calculations )
 

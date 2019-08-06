@@ -37,6 +37,8 @@ class Template:
             Prints information to the console
         """
 
+
+
         self.psr_name = str( psr_name )
         self.frontend = str( frontend )
         self.subbands = subbands
