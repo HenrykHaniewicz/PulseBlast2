@@ -6,8 +6,7 @@ import numpy as np
 import scipy.stats
 import scipy.optimize
 from numpy import exp, pi, sqrt
-import utils.otherUtilities as u
-from utils.pulsarUtilities import get_1D_OPW_mask
+from utils.pulsarUtilities import get_1D_OPW_mask, get_data_from_asc
 from utils.mathUtils import multi_norm, norm
 from custom_exceptions import DimensionError
 
@@ -100,7 +99,7 @@ def get_best_gaussian_fit( x, y, m_gauss = 15, bp = 15, p_wid = 150, guess = [ 1
 if __name__ == "__main__":
 
     asc = r'/Users/zhn11tau/Documents/Programs/Python/J1829+2456_lbw_nchan1_template.ascii'
-    x, y = u.get_data_from_asc( asc, duty = 0.05 )
+    x, y = get_data_from_asc( asc, duty = 0.05 )
     m, c, ig, msk = get_best_gaussian_fit( x, y, m_gauss = 7, save_dir = "/Users/zhn11tau/Documents/Programs/Python", f_pre = "J1829+2456_lbw_nchan1_template" )
 
     #plt.plot( x, y, 'k' )

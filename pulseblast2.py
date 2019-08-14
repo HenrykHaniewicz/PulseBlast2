@@ -86,7 +86,7 @@ eg. ["directory1","diretory2","diretory3"]
 If optional flags are not included, then the program will use defaults.
 
 ======================================================================================================
-Template Builder: -m -f "frontened" -s subbands [-p "template directory"]
+Template Builder: -m -f "frontend" -s subbands [-p "template directory"]
 -m                          Template builder
 -f "frontend"               Specifies frontend {str} (required)
 -s subbands                 Specifiies subbands {int} (required)
@@ -658,7 +658,7 @@ else:
 
 if ("-l" in commands) and (errors != []):
     # write to log file
-    with open("errors.txt", "a") as f:
+    with open("errors.log", "a") as f:
         for error in errors:
             f.write(error)
 elif ("-l" not in commands) and (errors != []):
@@ -671,25 +671,3 @@ A list of errors can be found below:
 
     for error in errors:
         print(error)
-
-
-# TESTING AREA ONLY:
-print(dirs)
-print(psr_names)
-print(verbose)
-print(r_verbose)
-print(c_verbose)
-print(m_verbose)
-print(t_verbose)
-print(frontend)
-print(subbands)
-print(template_dir)
-print(iterations)
-print(temp_dir)
-print(saveddata_dir)
-print(epoch_avg)
-print(cont_name)
-print(cont_dir)
-print(saveddata_dir2)
-print(c_index)
-print(r_index)

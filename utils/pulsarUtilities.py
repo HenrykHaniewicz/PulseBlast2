@@ -11,6 +11,12 @@ from pypulse.singlepulse import SinglePulse
 
 # Functions
 
+def get_data_from_asc( asc_file, duty = None ):
+    x, y = u.get_data_from_asc( asc_file )
+    if duty is not None:
+        y = removeBase( y, duty )
+    return x, y
+
 def getBase( profData, duty ):
      # get profile mask to determine off-pulse bins
      mask = get_1D_OPW_mask( profData, windowsize = (len( profData ) - 100) )
