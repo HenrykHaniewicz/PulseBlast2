@@ -1,4 +1,5 @@
 # RFI mitigation classes
+# Henryk T. Haniewicz, 2019
 
 """
 TODO:
@@ -108,6 +109,9 @@ class RFIBlaster:
             pickle.dump( load_dict, pickle_out )
             pickle_out.close()
 
+        if self.verbose:
+            print( "Loaded session for {}".format( self.psr_name ) )
+
         return load_dict[ 'FILE' ], load_dict[ 'DATA' ], load_dict[ 'POS' ], load_dict[ 'IG_LIST' ]
 
     def save_position( self, file, data, position, ignore_list ):
@@ -164,12 +168,17 @@ class RFIBlaster:
     def zap( self, file, archive, p, ignore_list, index ):
 
         if isinstance( index, int ):
+            if self.verbose:
+                print( "Zapping channel {}".format( index ) )
             archive.setWeights( 0.0, f = index )
         elif isinstance( index, ( list, tuple, np.ndarray ) ):
             for elem in index:
                 if p[1] > elem:
+                    print( p[1], elem )
                     continue
                 save = self.save_position( file, archive.getData(), [0, elem], ignore_list )
+                if self.verbose:
+                    print( "Zapping channel {}".format( elem ) )
                 archive.setWeights( 0.0, f = elem )
         data = archive.getData()
 
@@ -248,11 +257,11 @@ class RFIBlaster:
                 #         print( "Only 1 iteration:" )
                 #     data, mu, sigma, ar = self.mitigate( f, data, p, template, ar, ignore_list )
 
+                data = ar.getData()
+
                 for it in np.arange( self.iterations ):
-                    if self.epoch_average and it != 0:
-                        ar.tscrunch()
-                    data, mu, sigma, ar = self.mitigate( f, ar.getData(), p, template, ar, ignore_list )
-                    ar.setData( data )
+                    #data, ar = self.zap( f, ar, p, ignore_list, inds )
+                    data, mu, sigma, ar = self.mitigate( f, data, p, template, ar, ignore_list, False )
                     if self.verbose:
                         print( "Data loaded for iteration {}".format( it + 1 ) )
                     try:
@@ -262,9 +271,17 @@ class RFIBlaster:
                             break
                     except NameError:
                         pass
-                    old_mu, old_s = mu, sigma
+                    #old_mu, old_s = mu, sigma
 
                 # End mitigation
+
+                data = ar.getData()
+
+
+                #ar.tscrunch()
+                ar.fscrunch()
+                ar.plot()
+
 
                 #data, mu, sigma, ar = self.mitigate( f, data, p, template, ar, ignore_list )
                 #ar.setData( data )
@@ -386,17 +403,16 @@ class SigmaClip_Mitigator( RFIBlaster ):
         if data is None:
             data = archive.getData()
 
-        templateMask = pu.get_1D_OPW_mask( template, windowsize = (archive.getNbin() - 100) )
-        rmsArray, linearRmsArray, mu, sigma = u.getRMSArrayProperties( data, templateMask, 1.5 ) # Needs to input 2D array
+        templateMask = pu.get_1D_OPW_mask( template, windowsize = (archive.getNbin() - 150) )
+        rmsArray, linearRmsArray, mu, sigma = u.getRMSArrayProperties( data, templateMask, 1.0 ) # Needs to input 2D array
 
         # Creates the histogram
         pltu.histogram_and_curves( linearRmsArray, mean = mu, std_dev = sigma, bins = (archive.getNchan() // 4), x_axis = 'Root Mean Squared', y_axis = 'Frequency Density', title = r'$\mu={},\ \sigma={}$'.format( mu, sigma ), show = True, curve_list = [spyst.norm.pdf] )
 
-        rejectionCriterion = mathu.chauvenet( rmsArray, mu, sigma, 3 )
+        rejectionCriterion = mathu.chauvenet( rmsArray, mu, sigma, 1 )
 
         if not keep_dims:
             archive.reset()
-            data = archive.getData()
 
         if self.verbose:
             print( "Rejection criterion created." )
@@ -408,6 +424,6 @@ class SigmaClip_Mitigator( RFIBlaster ):
 if __name__ == "__main__":
 
     np.set_printoptions( threshold = np.inf )
-    v = ["/Users/zhn11tau/Documents/DATA/J1829+2456/1829+2456_2017/"]
-    s = SigmaClip_Mitigator( "J1829+2456", *v, iterations = 1, epoch_avg = True, verbose = True )
+    v = ["/Users/zhn11tau/Documents"]
+    s = SigmaClip_Mitigator( "J1851+00", *v, iterations = 1, epoch_avg = True, verbose = True )
     s.mitigation_setup()

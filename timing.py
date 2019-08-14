@@ -3,7 +3,7 @@
 
 """
 TODO:
-Do timing
+Integrate with app frontend
 """
 
 # Local imports
@@ -155,8 +155,9 @@ class Timer:
                 ar.time( temp, filename = abs_save, MJD = True, flags = self.jump_flags, appendto = True )
 
 
+# TESTING
 if __name__ == "__main__":
 
     v = ["/Volumes/Physics_Group/pulsar/data/J1851+00/fold"]
-    t = Timer( "J1851+00", *v, jump_flags = "-f TEST_JUMP", epochs = 2, subbands = 1, verbose = True )
+    t = Timer( "J1851+00", *v, jump_flags = "-f PUPPI_1400", epochs = 4, subbands = 1, verbose = True )
     t.time()

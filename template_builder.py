@@ -1,4 +1,5 @@
 # Template builder
+# Henryk T. Haniewicz, 2019
 
 # Imports
 import os

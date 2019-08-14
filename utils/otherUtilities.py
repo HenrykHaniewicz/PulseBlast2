@@ -8,10 +8,20 @@ import numpy as np
 import inspect
 from collections import namedtuple
 import matplotlib.pyplot as plt
-
 import scipy.stats as spyst
 
+from numpy import loadtxt
+from utils.pulsarUtilities import removeBase
 from utils.mathUtils import calculate_array_rms
+
+def get_data_from_asc( asc_file, duty = None ):
+    data = loadtxt( asc_file )
+    x = data[:, 0]
+    y = data[:, 1]
+
+    if duty is not None:
+        y = removeBase( y, duty )
+    return x, y
 
 
 def getRMSArrayProperties( array, mask, out_tol = 1.5 ):

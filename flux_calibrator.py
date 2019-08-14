@@ -1,4 +1,5 @@
 # Flux calibrator
+# Henryk T. Haniewicz, 2019
 
 """
 TODO:

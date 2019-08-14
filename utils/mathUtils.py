@@ -3,6 +3,7 @@
 
 # Imports
 import math
+import scipy.stats
 import numpy as np
 from custom_exceptions import DimensionError
 from scipy.stats import rv_continuous
@@ -19,6 +20,24 @@ class FFT_dist( rv_continuous ):
         return (b/(np.sqrt(1 + a*((k-x)**2))))
 
 # Functions
+def multi_norm( x, *args ):
+    ret = None
+    n_gauss = len( args )//3
+
+    if len( args ) % 3 != 0:
+        print( "Args supplied must be a multiple of 3 of form: mu, sig, amp" )
+    else:
+        ret = 0
+        for i in np.arange( 0, 3*n_gauss, 3 ):
+            ret += args[i + 2]*scipy.stats.norm.pdf( x, loc = args[i], scale = args[i + 1] )
+    return ret
+
+
+def norm( x, m, s, k ):
+    ret = k*scipy.stats.norm.pdf( x, loc = m, scale = s )
+    return ret
+
+
 def rootMeanSquare( array ):
 
     '''

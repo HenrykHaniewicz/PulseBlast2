@@ -11,6 +11,30 @@ from pypulse.singlepulse import SinglePulse
 
 # Functions
 
+def getBase( profData, duty ):
+     # get profile mask to determine off-pulse bins
+     mask = get_1D_OPW_mask( profData, windowsize = (len( profData ) - 100) )
+     # select those with mask==0, i.e. baseline bins
+     baseline = profData[mask == 0]
+     # get mean and rms of baseline
+     baseMean = np.mean( baseline )
+     #baseRMS = np.std( baseline )
+     baseRMS = mu.rootMeanSquare( baseline )
+
+     # return tuple consisting of mean and rms of baseline
+     return baseMean, baseRMS
+
+
+# Returns the profile data minus the baseline
+def removeBase( profData, duty ):
+
+     baseline, baseRMS = getBase( profData, duty )
+
+     # remove baseline mean from profile in place
+     profData = profData - baseline
+
+     return profData
+
 def chan_to_freq( ctr_freq, bandwidth, nchan ):
 
     start_freq = ctr_freq - ( bandwidth / 2 )
