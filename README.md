@@ -38,12 +38,19 @@ Coming soon.
 `-r/-rs/-rb/-rn [-i iterations] [-q "temp_dir"] [-g "saveddata_dir"] [-e]`
 
 `-r`                          RFI mitigation (defaults to sigma-clipping)
+
 `-rs`                         RFI mitigation by sigma-clipping
+
 `-rb`                         RFI mitigation by Bayesian interference modulation (not-imp)
+
 `-rn`                         RFI mitigation by deep-learning neural network 1D image recognition (not-imp)
+
 `-i iterations`               Specifies number excision iterations {int} (optional)
+
 `-q "temp_dir"`               Specifies the template directory {str} (optional)
+
 `-g "saveddata_dir"`          Specifies the directory to save data to {str} (optional)
+
 `-e`                          Specifies whether to average in the time domain before RFI excision (defaults to False if not given)
 
 ### **Calibration**
@@ -51,9 +58,13 @@ Coming soon.
 `-c -n "cont_name" [-w "cont_dir"] [-d "saveddata_dir"]`
 
 `-c`                          Flux calibration
+
 `-n "cont_name"`              Specifies continuum source name {str} (required)
+
 `-w "cont_dir"`               Specifies continuum source cal file directory {str} (optional)
+
 `-d "saveddata_dir"`          Specifies the directory to save data to {str} (optional)
+
 
 ### **Templates**
 
@@ -62,8 +73,11 @@ Builder:
 `-m -f "frontend" -s subbands [-p "template directory"]`
 
 `-m`                          Template builder
+
 `-f "frontend"`               Specifies the observation frontend {str} (required)
+
 `-s subbands`                 Specifies the number of sub-bands to make templates for {int} (required)
+
 `-p "template directory"`     Specifies the template output directory {str} (optional)
 
 Plotter:
