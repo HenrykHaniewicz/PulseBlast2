@@ -1,5 +1,5 @@
-# PulseBlast V2
-A basic python package that deals with pulsar data manipulation in a variety of ways. Options include the ability to create Times-Of-Arrival (TOAs), excise RFI from pulse scans, calibrate data and easily create pulsar template profiles.
+# PulseBlast 2
+PulseBlast 2 is a mass directory scanner for Unix, Darwin and DOS/NT kernels that allows the user to analyze PSRFITS data all the way from raw time series to fully calibrated and RFI excised TOAs. Many PSRFITS software packages in the past have dealt with data on the scale of a single file and many optimization methods for pulsar data currently used are used in PulseBlast 2 for individual file analysis. However, what sets PulseBlast 2 apart is its optimization across many directories spread out across the OS.
 
 ## **Mac Setup:**
 
