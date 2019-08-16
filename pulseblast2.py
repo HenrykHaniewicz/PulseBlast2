@@ -1,9 +1,12 @@
+#!/usr/local/bin/python
+
 # Master file for PulseBlast2
 # Sam Wallis-Riches, Kaine Bunting, 2019
 
 from rfi_mitigation import SigmaClip_Mitigator, Bayesian_Mitigator, NN_Mitigator
 import template_builder as tb
 from flux_calibrator import FluxCalibrator
+from timing import Timer
 
 print("""
 Welcome to PulseBlast V2

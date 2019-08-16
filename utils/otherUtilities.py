@@ -178,59 +178,26 @@ def addExtension( file, ext, save = False, overwrite = False ):
     return fileout
 
 
-# Formats directories from GUI output to console. Need to test on Windows...
-def formatMultipleDirectories( args ):
-    if platform.system() == 'Darwin' or 'Linux':
-        dirs = ' '.join( args )
-        dirs = dirs.replace( ":", "," )
-        dirs = dirs.replace( "Macintosh HD", "" )
-        dirs = dirs.split( "," )
-
-    elif platform.system() == 'Windows':
-        dirs = args
-
-    else:
-        raise OSError( "Could not determine OS." )
-
-    return dirs
-
-# Adds the correct separator (based on platform) to the end of the directories parsed.
-def addMultipleDirectoryEndSeparators( dirs, shell ):
-    if shell == 'Unix':
-        for i, d in enumerate( dirs ):
-            if not d.endswith("/"):
-                dirs[i] += "/"
-
-    elif shell == 'Windows':
-        for i, d in enumerate( dirs ):
-            if not d.endswith("\\"):
-                dirs[i] += "\\"
-
-    else:
-        raise ValueError( "Shell not recognized. (Shell provided: {})".format( shell ) )
-
-    return dirs
-
-
-# Takes in a single directory followed by the rest in a list. I'm gonna change this...
-def addDirectoryEndSeparators( dir, dirs ):
-    if platform.system() == 'Darwin' or "Linux":
-        directory = dir + "/"
-        directories = addMultipleDirectoryEndSeparators( dirs, 'Unix' )
-
-    elif platform.system() == "Windows":
-        directory = dir + "\\"
-        directories = addMultipleDirectoryEndSeparators( dirs, 'Windows' )
-
-    else:
-        raise OSError( "Could not determine OS." )
-
-    return directory, directories
+def count_files( search_string, *dirs, verbose = True ):
+    total = []
+    final_count = 0
+    for d in dirs:
+        count = 0
+        f_list = os.listdir( d )
+        total_count = len( f_list )
+        for f in f_list:
+            if search_string in f:
+                count += 1
+        total.append( [ d, total_count, count ] )
+        final_count += count
+    if verbose:
+        for e in total:
+            print( "Directory: {}".format( e[0] ), "\t", "Total files: {}".format( e[1] ), "\t", "Files found containing '{}': {}".format( search_string, e[2] ) )
+        print( "Total files found containing '{}': {}".format( search_string, final_count ) )
+    return total, final_count
 
 
 def check_kwarg( action, *args, **kwargs ):
-
     for argument in args:
-
         if not argument in kwargs:
             keyword == action
