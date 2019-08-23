@@ -56,6 +56,8 @@ class Timer:
         self.subbands = subbands
         self.tim_ext = tim_ext
         self.jump_flags = str( jump_flags )
+        if self.verbose:
+            print( "Timer initialized" )
 
     def __repr__( self ):
         return "Timer( psr_name = {}, epochs = {}, subbands = {} )".format( self.psr_name, self.epochs, self.subbands )
@@ -96,7 +98,7 @@ class Timer:
 
         try:
             hdul = fits.open( file )
-        except OSError:
+        except:
             return -1
 
         name = hdul[0].header[ 'SRC_NAME' ]
@@ -130,12 +132,12 @@ class Timer:
         """
         """
 
-        if not self.verbose:
-            sys.stdout.write( '\n {0:<7s}  {1:<7s}\n'.format( 'Files', '% done' ) )
-
         for directory in self.dirs:
         # Cycle through each file in the stored directory
             for f in sorted( os.listdir( directory ) ):
+
+                if self.verbose:
+                    print( f"Preparing {f}..." )
 
                 prep = self.prepare_file( os.path.join( directory, f ) )
 
@@ -152,12 +154,12 @@ class Timer:
                 save_fn = "{0}_{1}.{2}".format( self.psr_name, fe, self.tim_ext )
                 abs_save = os.path.join( self.toa_dir, save_fn )
 
-                ar.time( temp, filename = abs_save, MJD = True, flags = self.jump_flags, appendto = True )
+                ar.time( temp, filename = None, MJD = True, flags = self.jump_flags, appendto = True )
 
 
 # TESTING
 if __name__ == "__main__":
 
-    v = ["/Volumes/Physics_Group/pulsar/data/J1851+00/fold"]
-    t = Timer( "J1851+00", *v, jump_flags = "-f PUPPI_1400", epochs = 4, subbands = 1, verbose = True )
+    #v = ["/Volumes/Physics_Group/pulsar/data/J1851+00/fold"]
+    t = Timer( "J1829+2456", jump_flags = "-f PUPPI_1400", epochs = 4, subbands = 1, verbose = True )
     t.time()

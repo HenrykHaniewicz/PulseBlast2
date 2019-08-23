@@ -6,7 +6,7 @@ import numpy as np
 import scipy.stats
 import scipy.optimize
 from numpy import exp, pi, sqrt
-from utils.pulsarUtilities import get_1D_OPW_mask, get_data_from_asc
+from utils.pulsarUtilities import get_1D_OPW_mask, get_data_from_asc, removeBase
 from utils.mathUtils import multi_norm, norm
 from custom_exceptions import DimensionError
 
@@ -25,7 +25,11 @@ def save_all( abs_dir, file_prefix, n, ig, m ):
     np.save( os.path.join( abs_dir, file_prefix + "_{}gaussianfit_individualgaussians.npy".format( n ) ), ig )
     np.save( os.path.join( abs_dir, file_prefix + "_{}gaussianfit.npy".format( n ) ), m )
 
-def get_best_gaussian_fit( x, y, m_gauss = 15, bp = 15, p_wid = 150, guess = [ 1024, 20, 6000 ], plot_chisq = True, save_dir = None, f_pre = "", verbose = True ):
+def get_best_gaussian_fit( x, y, remove_base = True, m_gauss = 15, bp = 15, p_wid = 150, guess = [ 1024, 20, 6000 ], plot_chisq = True, save_dir = None, f_pre = "", verbose = True ):
+
+    if remove_base:
+        y = removeBase( y, 0.05 )
+
     if not isinstance( guess, np.ndarray ):
         guess_shape = np.array( guess ).shape
     else:
@@ -100,7 +104,7 @@ if __name__ == "__main__":
 
     asc = r'/Users/zhn11tau/Documents/Programs/Python/J1829+2456_lbw_nchan1_template.ascii'
     x, y = get_data_from_asc( asc, duty = 0.05 )
-    m, c, ig, msk = get_best_gaussian_fit( x, y, m_gauss = 7, save_dir = "/Users/zhn11tau/Documents/Programs/Python", f_pre = "J1829+2456_lbw_nchan1_template" )
+    m, c, ig, msk = get_best_gaussian_fit( x, y, remove_base = False, m_gauss = 7, save_dir = "/Users/zhn11tau/Documents/Programs/Python", f_pre = "J1829+2456_lbw_nchan1_template" )
 
     #plt.plot( x, y, 'k' )
     for p in ig:

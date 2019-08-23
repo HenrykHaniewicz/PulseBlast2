@@ -7,6 +7,9 @@ import numpy as np
 import pickle
 from astropy.io import fits
 from pypulse.archive import Archive
+from utils.gaussian_fit import get_best_gaussian_fit
+
+import matplotlib.pyplot as plt
 
 file_root = os.path.dirname( os.path.abspath( __file__ ) )
 
@@ -122,7 +125,7 @@ class Template:
         return temp_dict[ 'DATA' ], temp_dict[ 'IG_LIST' ], filename
 
 
-    def make_template( self ):
+    def make_template( self, gaussian_fit = False ):
 
         """
         Script to create the template
@@ -131,6 +134,7 @@ class Template:
         for directory in self.dirs:
             for f in sorted( os.listdir( directory ) ):
                 template, ignore_list, pkl_name = self.load_template()
+                self.template = template
 
                 if f in ignore_list:
                     if self.verbose:
@@ -178,6 +182,8 @@ class Template:
 
 
         save_file = self.savefile
+        if gaussian_fit:
+            self.template, chis, ind_gaussians, msk = get_best_gaussian_fit( np.arange( len( self.template ) ), self.template, m_gauss = 7, plot_chisq = False, p_wid = 150 )
         np.save( os.path.join( self.temp_dir, save_file ), self.template )
         print( "Template creation finished." )
         return self.template
@@ -371,7 +377,7 @@ if __name__ == "__main__":
             temp = TD_Template( args.psrname[0], args.frontend[0], args.subbands, *args.directories, template_dir = args.output_directory, verbose = args.verbose )
         else:
             temp = FD_Template( args.psrname[0], args.frontend[0], args.subbands, *args.directories, template_dir = args.output_directory, verbose = args.verbose )
-        template = temp.make_template()
+        template = temp.make_template( True )
 
 
     main()

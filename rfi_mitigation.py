@@ -14,11 +14,14 @@ Modular saving (with detailed ignore list)
 
 # PB.py dir_file.txt -p ["J1829+2456", "J1851+00"] -c -rs
 
+FIT = True
+
 # Local imports
 import utils.pulsarUtilities as pu
 import utils.plotUtils as pltu
 import utils.otherUtilities as u
 import utils.mathUtils as mathu
+from utils.saving import save_psrfits
 from custom_exceptions import TemplateLoadError
 from template_builder import FD_Template
 
@@ -45,7 +48,7 @@ class RFIBlaster:
     Initializing this base class and mitigating will return the data as input.
     """
 
-    def __init__( self, psr_name, *dirs, iterations = 1, temp_dir = "templates", saveddata_dir = "data", epoch_avg = False, verbose = False ):
+    def __init__( self, psr_name, *dirs, iterations = 1, temp_dir = "templates", saveddata_dir = "data", epoch_avg = False, save_as_np = False, verbose = False ):
 
         self.psr_name = str( psr_name )
         self.temp_dir = os.path.join( file_root, self.psr_name, temp_dir )
@@ -63,6 +66,7 @@ class RFIBlaster:
         self.pklfile = os.path.join( self.pkl_dir, "{}_rfimitigation_save.pkl".format( self.psr_name ) )
         self.iterations = iterations
         self.epoch_average = epoch_avg
+        self.save_as_np = save_as_np
         self.method = self.get_method()
 
     def __repr__( self ):
@@ -85,6 +89,7 @@ class RFIBlaster:
 
     def get_method( self ):
         return 'NO METHOD'
+
 
     def load_template( self, dir, filename ):
 
@@ -127,7 +132,7 @@ class RFIBlaster:
         return save_dict
 
 
-    def prepare_file( self, file ):
+    def prepare_file( self, file, do_fit = False ):
 
         """
         Prepares the PSRFITS file in the correct format for the program.
@@ -154,7 +159,7 @@ class RFIBlaster:
             reply = str( input( "Would you like to make a suitable one? (y / n)" ) ).lower().strip()
             if reply[0] == 'y':
                 temp = FD_Template( self.psr_name, fe, 1, template_dir = "templates", verbose = self.verbose, *self.dirs )
-                template = temp.make_template()
+                template = temp.make_template( gaussian_fit = do_fit )
             else:
                 raise TemplateLoadError( "You can make a suitable template via the following command: python template_builder.py psr_name -b [frontend] -d [dirs]" )
 
@@ -185,13 +190,14 @@ class RFIBlaster:
         return data, archive
 
 
-    def mitigate( self, file, data, p, template, archive, ignore_list, keep_dims = False ):
+    def mitigate( self, file, p, template, archive, ignore_list ):
 
-        data = data
+        archive = archive
         mu = 0
         sigma = 1
+        data = None
 
-        return data, mu, sigma
+        return archive, mu, sigma, data
 
 
     def mitigation_setup( self ):
@@ -224,7 +230,7 @@ class RFIBlaster:
                         print( "File {} does not match file in saved data. Skipping...".format( f ) )
                     continue
 
-                prep = self.prepare_file( os.path.join( directory, f ) )
+                prep = self.prepare_file( os.path.join( directory, f ), do_fit = FIT )
                 if prep == -1:
                     if self.verbose:
                         try:
@@ -235,33 +241,10 @@ class RFIBlaster:
 
                 ar, template, fe, mjd = prep[0], prep[1], prep[2], prep[3]
 
-                # # Mitigation step
-                # if self.iterations != 1:
-                #     for it in np.arange( self.iterations ):
-                #         if it == np.arange( self.iterations )[-1]:
-                #             data, mu, sigma, ar = self.mitigate( f, data, p, template, ar, ignore_list )
-                #         else:
-                #             data, mu, sigma, ar = self.mitigate( f, data, p, template, ar, ignore_list, keep_dims = True )
-                #         if self.verbose:
-                #             print( "Data loaded for iteration {}".format( it + 1 ) )
-                #         try:
-                #             if (abs( old_mu - mu ) < TOL) and (abs( old_s - sigma ) < TOL):
-                #                 if self.verbose:
-                #                     print( "Stopping after iteration {} as data is fully excised.".format( it + 1 ) )
-                #                 break
-                #         except NameError:
-                #             pass
-                #         old_mu, old_s = mu, sigma
-                # else:
-                #     if self.verbose:
-                #         print( "Only 1 iteration:" )
-                #     data, mu, sigma, ar = self.mitigate( f, data, p, template, ar, ignore_list )
-
-                data = ar.getData()
+                # Start mitigation
 
                 for it in np.arange( self.iterations ):
-                    #data, ar = self.zap( f, ar, p, ignore_list, inds )
-                    data, mu, sigma, ar = self.mitigate( f, data, p, template, ar, ignore_list, False )
+                    ar, mu, sigma, data = self.mitigate( f, p, template, ar, ignore_list )
                     if self.verbose:
                         print( "Data loaded for iteration {}".format( it + 1 ) )
                     try:
@@ -271,25 +254,18 @@ class RFIBlaster:
                             break
                     except NameError:
                         pass
-                    #old_mu, old_s = mu, sigma
+                    old_mu, old_s = mu, sigma
 
                 # End mitigation
 
-                data = ar.getData()
-
-
-                #ar.tscrunch()
-                ar.fscrunch()
-                ar.plot()
-
-
-                #data, mu, sigma, ar = self.mitigate( f, data, p, template, ar, ignore_list )
-                #ar.setData( data )
-
                 save_fn = "{0}_{1}_{2}_{3}".format( self.psr_name, mjd, fe, obs_num )
-                save_fn += ext
-                #np.save( self.saveddata_dir + save_fn, data )
-                ar.save( os.path.join( self.saveddata_dir, save_fn ) ) # Create routine that overwrites old files
+                if self.save_as_np:
+                    np.save( os.join( self.saveddata_dir, save_fn ), data )
+                    save_fn += "_DATWTS"
+                    np.save( os.join( self.saveddata_dir, save_fn ), ar.getWeights() )
+                else:
+                    save_fn += ext
+                    save_psrfits( os.path.join( self.saveddata_dir, save_fn ), ar )
                 ignore_list.append( ig_dict )
                 save_dict = self.save_position( None, None, [0, 0], ignore_list )
 
@@ -326,13 +302,15 @@ class Bayesian_Mitigator( RFIBlaster ):
     def get_method( self ):
         return 'B'
 
-    def mitigate( self, file, data, p, template, archive, ignore_list, keep_dims = False ):
+    def mitigate( self, file, p, template, archive, ignore_list ):
 
+        archive = archive
         mu = 0
         sigma = 1
+        data = None
         raise TypeError( "Bayesian excision features are not currently implemented" )
 
-        return data, mu, sigma
+        return archive, mu, sigma, data
 
 
 # DLNN class
@@ -362,13 +340,15 @@ class NN_Mitigator( RFIBlaster ):
     def get_method( self ):
         return 'N'
 
-    def mitigate( self, file, data, p, template, archive, ignore_list, keep_dims = False ):
+    def mitigate( self, file, p, template, archive, ignore_list ):
 
+        archive = archive
         mu = 0
         sigma = 1
+        data = None
         raise TypeError( "Neural Network features are not currently implemented" )
 
-        return data, mu, sigma
+        return archive, mu, sigma, data
 
 
 # Sigma-clipping class
@@ -398,32 +378,30 @@ class SigmaClip_Mitigator( RFIBlaster ):
     def get_method( self ):
         return 'S'
 
-    def mitigate( self, file, data, p, template, archive, ignore_list, keep_dims = False ):
+    def mitigate( self, file, p, template, archive, ignore_list ):
 
-        if data is None:
-            data = archive.getData()
+        data = archive.getData()
 
         templateMask = pu.get_1D_OPW_mask( template, windowsize = (archive.getNbin() - 150) )
         rmsArray, linearRmsArray, mu, sigma = u.getRMSArrayProperties( data, templateMask, 1.0 ) # Needs to input 2D array
 
         # Creates the histogram
-        pltu.histogram_and_curves( linearRmsArray, mean = mu, std_dev = sigma, bins = (archive.getNchan() // 4), x_axis = 'Root Mean Squared', y_axis = 'Frequency Density', title = r'$\mu={},\ \sigma={}$'.format( mu, sigma ), show = True, curve_list = [spyst.norm.pdf] )
+        pltu.histogram_and_curves( linearRmsArray, mean = mu, std_dev = sigma, bins = (archive.getNchan() // 4), x_axis = 'Root Mean Squared', y_axis = 'Frequency Density', title = r'$\mu={},\ \sigma={}$'.format( mu, sigma ), show = False, curve_list = [spyst.norm.pdf] )
 
-        rejectionCriterion = mathu.chauvenet( rmsArray, mu, sigma, 1 )
+        rejectionCriterion = mathu.chauvenet( rmsArray, mu, sigma, 2 )
 
-        if not keep_dims:
-            archive.reset()
+        archive.reset()
 
         if self.verbose:
             print( "Rejection criterion created." )
 
         data, archive = self.zap( file, archive, p, ignore_list, np.asarray( rejectionCriterion ).nonzero()[ rejectionCriterion.ndim - 1 ] )
 
-        return data, mu, sigma, archive
+        return archive, mu, sigma, data
 
 if __name__ == "__main__":
 
     np.set_printoptions( threshold = np.inf )
-    v = ["/Users/zhn11tau/Documents"]
-    s = SigmaClip_Mitigator( "J1851+00", *v, iterations = 1, epoch_avg = True, verbose = True )
+    v = ["/Users/zhn11tau/Documents/DATA/J1829+2456/1829+2456_2017"]
+    s = SigmaClip_Mitigator( "J1829+2456", *v, iterations = 1, epoch_avg = True, verbose = True )
     s.mitigation_setup()
