@@ -12,8 +12,6 @@ Modular saving (with detailed ignore list)
     save_dict = { 'FILE' : filename, 'DATA' : self.data, 'POS' : [ s, c ], 'IG_LIST' : [ {}, ... ] }
 """
 
-# PB.py dir_file.txt -p ["J1829+2456", "J1851+00"] -c -rs
-
 FIT = True
 
 # Local imports
@@ -22,6 +20,7 @@ import utils.plotUtils as pltu
 import utils.otherUtilities as u
 import utils.mathUtils as mathu
 from utils.saving import save_psrfits
+from utils.saving import load_session as load
 from custom_exceptions import TemplateLoadError
 from template_builder import FD_Template
 
@@ -101,23 +100,7 @@ class RFIBlaster:
         return template
 
     def load_session( self ):
-
-        filename = self.pklfile
-
-        try:
-            pickle_in = open( filename, "rb" )
-            load_dict = pickle.load( pickle_in )
-            pickle_in.close()
-        except OSError:
-            load_dict = { 'FILE' : None, 'DATA': None, 'POS' : [0, 0], 'IG_LIST': [] }
-            pickle_out = open( filename, "wb" )
-            pickle.dump( load_dict, pickle_out )
-            pickle_out.close()
-
-        if self.verbose:
-            print( "Loaded session for {}".format( self.psr_name ) )
-
-        return load_dict[ 'FILE' ], load_dict[ 'DATA' ], load_dict[ 'POS' ], load_dict[ 'IG_LIST' ]
+        return load( self.pklfile, arg = 'r' )
 
     def save_position( self, file, data, position, ignore_list ):
 

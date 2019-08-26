@@ -28,6 +28,7 @@ from astropy.coordinates import SkyCoord
 import astropy.units as astu
 
 from utils.calculate_flux import find_source_params_f2, getFlux
+from utils.saving import load_session as load
 
 file_root = os.path.dirname( os.path.abspath( __file__ ) )
 
@@ -95,18 +96,7 @@ class FluxCalibrator:
 
 
     def load_session( self ):
-
-        filename = self.pklfile
-
-        try:
-            pickle_in = open( filename, "rb" )
-            load_dict = pickle.load( pickle_in )
-            pickle_in.close()
-        except OSError:
-            if self.verbose:
-                print( "Could not retrieve fluxcal saved data." )
-                print( "Attempting to create a new save file..." )
-            raise Exception( "Nah" )
+        return load( self.pklfile, arg = 'c' )
 
     def hdul_setup( self, dir, file, is_cal = True ):
 

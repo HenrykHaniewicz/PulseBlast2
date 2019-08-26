@@ -8,6 +8,7 @@ import pickle
 from astropy.io import fits
 from pypulse.archive import Archive
 from utils.gaussian_fit import get_best_gaussian_fit
+from utils.saving import load_session as load
 
 import matplotlib.pyplot as plt
 
@@ -104,25 +105,12 @@ class Template:
         return np.copy( data ), n, nbin
 
 
-    def load_template( self ):
+    def load_session( self ):
 
         """
         Attempts to load template from save. Otherwise, creates a new template with conventional name.
         """
-
-        filename = self.pklfile
-
-        try:
-            pickle_in = open( filename, "rb" )
-            temp_dict = pickle.load( pickle_in )
-            pickle_in.close()
-        except OSError:
-            temp_dict = { 'DATA': None, 'IG_LIST': [] }
-            pickle_out = open( filename, "wb" )
-            pickle.dump( temp_dict, pickle_out )
-            pickle_out.close()
-
-        return temp_dict[ 'DATA' ], temp_dict[ 'IG_LIST' ], filename
+        return load( self.pklfile, arg = 'm' )
 
 
     def make_template( self, gaussian_fit = False ):
@@ -133,7 +121,7 @@ class Template:
 
         for directory in self.dirs:
             for f in sorted( os.listdir( directory ) ):
-                template, ignore_list, pkl_name = self.load_template()
+                template, ignore_list, pkl_name = self.load_session()
                 self.template = template
 
                 if f in ignore_list:
