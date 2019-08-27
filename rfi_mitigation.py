@@ -19,8 +19,8 @@ import utils.pulsarUtilities as pu
 import utils.plotUtils as pltu
 import utils.otherUtilities as u
 import utils.mathUtils as mathu
-from utils.saving import save_psrfits
-from utils.saving import load_session as load
+from utils.saving import save_psrfits, save_session
+from utils.loading import load_session as load
 from custom_exceptions import TemplateLoadError
 from template_builder import FD_Template
 
@@ -103,16 +103,7 @@ class RFIBlaster:
         return load( self.pklfile, arg = 'r' )
 
     def save_position( self, file, data, position, ignore_list ):
-
-        if len( position ) != 2:
-            raise ValueError( "Position data corrupted. Should be length 2. Actual length: {}".format( len( position ) ) )
-
-        save_dict = { 'FILE' : file, 'DATA': data, 'POS' : position, 'IG_LIST': ignore_list }
-        pickle_out = open( self.pklfile, "wb" )
-        pickle.dump( save_dict, pickle_out )
-        pickle_out.close()
-
-        return save_dict
+        return save_session( self.pklfile, arg = 'r', *[ file, data, position, ignore_list ] )
 
 
     def prepare_file( self, file, do_fit = False ):

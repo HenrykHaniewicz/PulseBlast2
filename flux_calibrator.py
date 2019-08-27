@@ -28,7 +28,8 @@ from astropy.coordinates import SkyCoord
 import astropy.units as astu
 
 from utils.calculate_flux import find_source_params_f2, getFlux
-from utils.saving import load_session as load
+from utils.saving import save_psrfits, save_session
+from utils.loading import load_session as load
 
 file_root = os.path.dirname( os.path.abspath( __file__ ) )
 
@@ -95,8 +96,11 @@ class FluxCalibrator:
             os.makedirs( os.path.join( file_root, self.psr_name, 'pickle_dumps', 'calibration' ) )
 
 
-    def load_session( self ):
-        return load( self.pklfile, arg = 'c' )
+    def load_session( self, bin_file ):
+        return load( bin_file, arg = 'c' )
+
+    def save_position( self, bin_file, *args ):
+        return save_session( bin_file, arg = 'c', *args )
 
     def hdul_setup( self, dir, file, is_cal = True ):
 
@@ -122,9 +126,7 @@ class FluxCalibrator:
         if os.path.isfile( abs_dict_file ):
             if self.verbose:
                 print( "Loading previously saved continuum data..." )
-            pickle_in = open( abs_dict_file, "rb" )
-            onoff_list = pickle.load( pickle_in )
-            pickle_in.close()
+            onoff_list = self.load_session( abs_dict_file )
         else:
 
             if self.verbose:
@@ -163,9 +165,7 @@ class FluxCalibrator:
             if self.verbose:
                 print( "Saving as {}".format( dict_file ) )
 
-            pickle_out = open( abs_dict_file, "wb" )
-            pickle.dump( onoff_list, pickle_out )
-            pickle_out.close()
+            self.save_position( abs_dict_file, *[onoff_list] )
 
         return onoff_list
 
@@ -323,12 +323,8 @@ class FluxCalibrator:
         if os.path.isfile( conv_abs_path ):
             if self.verbose:
                 print( "Loading previously saved conversion factor data..." )
-            pickle_in = open( conv_abs_path, "rb" )
-            conversion_factors = pickle.load( pickle_in )
-            pickle_in.close()
-            pickle_in = open( cal_abs_path, "rb" )
-            cal_mjds = pickle.load( pickle_in )
-            pickle_in.close()
+            conversion_factors = self.load_session( conv_abs_path )
+            cal_mjds = self.load_session( cal_abs_path )
         else:
             if self.verbose:
                 print( "Making new conversion factor list..." )
@@ -344,12 +340,8 @@ class FluxCalibrator:
             if self.verbose:
                 print( "Saving as {}".format( conv_file ) )
 
-            pickle_out = open( conv_abs_path, "wb" )
-            pickle.dump( conversion_factors, pickle_out )
-            pickle_out.close()
-            pickle_out = open( cal_abs_path, "wb" )
-            pickle.dump( cal_mjds, pickle_out )
-            pickle_out.close()
+            self.save_position( conv_abs_path, *[conversion_factors] )
+            self.save_position( cal_abs_path, *[cal_mjds] )
 
 
         if type( conversion_factors ) != np.ndarray:
@@ -398,6 +390,8 @@ class FluxCalibrator:
                         sub = conversion_factors[ counter ] * sub
                         print(sub.shape)
                     counter = 0
+
+                # save_psrfits
 
         return self
 

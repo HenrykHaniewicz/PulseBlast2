@@ -93,20 +93,20 @@ def save_psrfits( save_filename, ar ):
       hdulist.writeto( save_filename, overwrite = True )
 
 
-def load_session( bin_file, arg = None ):
+def save_session( bin_file, arg = None, *args ):
 
     if len( arg ) is not 1:
-        raise ValueError( "Please only try to load one session at a time..." )
+        raise ValueError( "Please only try to save one session at a time..." )
 
     root, ext = os.path.splitext( bin_file )
 
     if ext is 'pkl':
         if arg == 'm':
-            return load_session_template_pickle( bin_file )
+            return save_session_template_pickle( bin_file, *args )
         elif arg == 'r':
-            return load_session_rfi_pickle( bin_file )
+            return save_session_rfi_pickle( bin_file, *args )
         elif arg == 'c':
-            return load_session_calibration_pickle( bin_file )
+            return save_session_calibration_pickle( bin_file, *args )
         else:
             return 0
     elif ext is 'json':
@@ -114,43 +114,31 @@ def load_session( bin_file, arg = None ):
     else:
         return 0
 
-def load_session_template_pickle( bin_file ):
+def save_session_template_pickle( bin_file, temp_data, ignore_list ):
 
-    try:
-        pickle_in = open( bin_file, "rb" )
-        temp_dict = pickle.load( pickle_in )
-        pickle_in.close()
-    except OSError:
-        temp_dict = { 'DATA': None, 'IG_LIST': [] }
-        pickle_out = open( bin_file, "wb" )
-        pickle.dump( temp_dict, pickle_out )
-        pickle_out.close()
+    temp_dict = { 'DATA': temp_data, 'IG_LIST': ignore_list }
+    pickle_out = open( bin_file, "wb" )
+    pickle.dump( temp_dict, pickle_out )
+    pickle_out.close()
 
-    return temp_dict[ 'DATA' ], temp_dict[ 'IG_LIST' ], bin_file
+    return temp_dict
 
-def load_session_rfi_pickle( bin_file ):
+def save_session_rfi_pickle( bin_file, file, data, position, ignore_list ):
 
-    try:
-        pickle_in = open( bin_file, "rb" )
-        load_dict = pickle.load( pickle_in )
-        pickle_in.close()
-    except OSError:
-        load_dict = { 'FILE' : None, 'DATA': None, 'POS' : [0, 0], 'IG_LIST': [] }
-        pickle_out = open( bin_file, "wb" )
-        pickle.dump( load_dict, pickle_out )
-        pickle_out.close()
+    if len( position ) != 2:
+        raise ValueError( f"Position data corrupted. Should be length 2. Actual length: {len( position )}" )
 
-    return load_dict[ 'FILE' ], load_dict[ 'DATA' ], load_dict[ 'POS' ], load_dict[ 'IG_LIST' ]
+    save_dict = { 'FILE' : file, 'DATA': data, 'POS' : position, 'IG_LIST': ignore_list }
+    pickle_out = open( bin_file, "wb" )
+    pickle.dump( save_dict, pickle_out )
+    pickle_out.close()
 
-def load_session_calibration_pickle( bin_file ):
+    return save_dict
 
-    # Needs work...
+def save_session_calibration_pickle( bin_file, dict ):
 
-    try:
-        pickle_in = open( bin_file, "rb" )
-        load_dict = pickle.load( pickle_in )
-        pickle_in.close()
-    except OSError:
-        if self.verbose:
-            print( "Could not retrieve fluxcal saved data." )
-            print( "Attempting to create a new save file..." )
+    pickle_out = open( bin_file, "wb" )
+    pickle.dump( dict, pickle_out )
+    pickle_out.close()
+
+    return dict
