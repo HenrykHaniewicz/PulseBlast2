@@ -77,7 +77,6 @@ class FluxCalibrator:
         self.verbose = verbose
         self.pkl_dir = os.path.join( file_root, self.psr_name, 'pickle_dumps' )
         self.pklfile = os.path.join( self.pkl_dir, "{}_calibration_save.pkl".format( self.psr_name ) )
-        self.dirs = ["/Users/zhn11tau/Documents/DATA/J1829+2456/1829+2456_2017/"]
 
     def __repr__( self ):
         return "FluxCalibrator( psr_name = {}, cont_name = {} )".format( self.psr_name, self.cont_name )
@@ -97,10 +96,10 @@ class FluxCalibrator:
 
 
     def load_session( self, bin_file ):
-        return load( bin_file, arg = 'c' )
+        return load( bin_file, mode = 'c' )
 
-    def save_position( self, bin_file, *args ):
-        return save_session( bin_file, arg = 'c', *args )
+    def save_position( self, bin_file, *ex ):
+        return save_session( bin_file, *ex, mode = 'c' )
 
     def hdul_setup( self, dir, file, is_cal = True ):
 
@@ -165,7 +164,7 @@ class FluxCalibrator:
             if self.verbose:
                 print( "Saving as {}".format( dict_file ) )
 
-            self.save_position( abs_dict_file, *[onoff_list] )
+            self.save_position( abs_dict_file, onoff_list )
 
         return onoff_list
 
@@ -208,7 +207,7 @@ class FluxCalibrator:
         return a
 
 
-    def calculate_Jy_per_count( self, cal_file_list ):
+    def calculate_Jy_per_count( self, cal_file_list, gain = 11.0 ):
 
         """
         Input list: [ PSR_CAL, ON_CAL, OFF_CAL, CAL_MJD ]
@@ -217,7 +216,7 @@ class FluxCalibrator:
         conversion_factor  :  np.ndarray
         """
 
-        G = 11.0
+        G = gain
 
         if type( cal_file_list ) != np.ndarray:
             cal_file_list = np.array( cal_file_list )
@@ -237,8 +236,9 @@ class FluxCalibrator:
         aabb_list = []
 
         for i, arc in enumerate( archives ):
+            arc.reset()
             arc.tscrunch()
-            A, B, C, D = self.convert_subint_pol_state( arc.getData(), arc.subintheader[ 'POL_TYPE' ], "AABBCRCI", linear = arc.header[ 'FD_POLN' ] )
+            A, B, C, D = self.convert_subint_pol_state( arc.getData( weight = False ), arc.subintheader[ 'POL_TYPE' ], "AABBCRCI", linear = arc.header[ 'FD_POLN' ] )
             l = { 'ARC' : arc, 'DATA' : [ A, B ], 'FREQS' : freqs[i], 'S_DUTY' : arc.getValue( 'CAL_PHS' ) , 'DUTY' : arc.getValue( 'CAL_DCYC' ), 'BW' : arc.getBandwidth() }
             aabb_list.append( l )
 
@@ -340,8 +340,8 @@ class FluxCalibrator:
             if self.verbose:
                 print( "Saving as {}".format( conv_file ) )
 
-            self.save_position( conv_abs_path, *[conversion_factors] )
-            self.save_position( cal_abs_path, *[cal_mjds] )
+            self.save_position( conv_abs_path, conversion_factors )
+            self.save_position( cal_abs_path, cal_mjds )
 
 
         if type( conversion_factors ) != np.ndarray:
@@ -371,7 +371,8 @@ class FluxCalibrator:
                     continue
 
                 ar = Archive( os.path.join( directory, psr_file ), verbose = self.verbose )
-                data = ar.data_orig
+                ar.reset()
+                data = ar.getData( weight = False )
                 new_data = []
                 for sub in data:
                     A, B, C, D = self.convert_subint_pol_state( sub, ar.subintheader[ 'POL_TYPE' ], "AABBCRCI", linear = ar.header[ 'FD_POLN' ] )
@@ -391,7 +392,9 @@ class FluxCalibrator:
                         print(sub.shape)
                     counter = 0
 
-                # save_psrfits
+
+
+                save_psrfits(  )
 
         return self
 
@@ -446,6 +449,7 @@ if __name__ == "__main__":
 
     n = "J1829+2456"
     cn = "B1442"
+    d = [ "/Users/zhn11tau/Documents/DATA/J1829+2456/1829+2456_2017", "/Users/zhn11tau/Documents/DATA/J1829+2456/1829+2456_2018_0001" ]
     c_d = "/Users/zhn11tau/Documents/DATA/J1829+2456/cont/"
-    c = FluxCalibrator( n, cn, cont_dir = c_d, verbose = True )
+    c = FluxCalibrator( n, cn, *d, cont_dir = c_d, verbose = True )
     c.calibrate()

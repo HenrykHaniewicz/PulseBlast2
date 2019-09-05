@@ -5,23 +5,23 @@ import pickle
 import numpy as np
 
 
-def load_session( bin_file, arg = None ):
+def load_session( bin_file, mode = None ):
 
-    if len( arg ) is not 1:
+    if len( mode ) is not 1:
         raise ValueError( "Please only try to load one session at a time..." )
 
     root, ext = os.path.splitext( bin_file )
 
-    if ext is 'pkl':
-        if arg == 'm':
+    if ext == '.pkl':
+        if mode == 'm':
             return load_session_template_pickle( bin_file )
-        elif arg == 'r':
+        elif mode == 'r':
             return load_session_rfi_pickle( bin_file )
-        elif arg == 'c':
+        elif mode == 'c':
             return load_session_calibration_pickle( bin_file )
         else:
             return 0
-    elif ext is 'json':
+    elif ext == '.json':
         raise TypeError( "Need to figure out how JSON works..." )
     else:
         return 0

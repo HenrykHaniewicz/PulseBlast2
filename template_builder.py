@@ -81,10 +81,10 @@ class Template:
         """
         Attempts to load template from save. Otherwise, creates a new template with conventional name.
         """
-        return load( self.pklfile, arg = 'm' )
+        return load( self.pklfile, mode = 'm' )
 
-    def save_position( self, ignore_list ):
-        return save_session( self.pklfile, arg = 'm', *[ignore_list] )
+    def save_position( self, *args ):
+        return save_session( self.pklfile, *args, mode = 'm' )
 
 
     def prepare_file( self, file ):
@@ -107,7 +107,6 @@ class Template:
 
         ar = Archive( file, verbose = self.verbose )
         ar.tscrunch( nsubint = 1 )
-        nsubint = ar.getNsubint()
         ar.fscrunch( nchan = 1 )
         n = 1
         nbin = ar.getNbin()
@@ -166,7 +165,7 @@ class Template:
 
                 ignore_list.append( f )
 
-                self.save_position( ignore_list )
+                self.save_position( *[self.template, ignore_list] )
 
 
         save_file = self.savefile
@@ -243,7 +242,6 @@ class FD_Template( Template ):
 
         ar = Archive( file, verbose = self.verbose )
         ar.tscrunch( nsubint = 1 )
-        nsubint = ar.getNsubint()
         ar.fscrunch( nchan = self.subbands )
         nchan = ar.getNchan()
         nbin = ar.getNbin()
@@ -317,7 +315,6 @@ class TD_Template( Template ):
 
         ar = Archive( file, verbose = self.verbose )
         ar.tscrunch( nsubint = self.subbands )
-        nsubint = ar.getNsubint()
         ar.fscrunch( nchan = 1 )
         nsubint = ar.getNsubint()
         nbin = ar.getNbin()

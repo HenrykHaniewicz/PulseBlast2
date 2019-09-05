@@ -100,10 +100,10 @@ class RFIBlaster:
         return template
 
     def load_session( self ):
-        return load( self.pklfile, arg = 'r' )
+        return load( self.pklfile, mode = 'r' )
 
     def save_position( self, file, data, position, ignore_list ):
-        return save_session( self.pklfile, arg = 'r', *[ file, data, position, ignore_list ] )
+        return save_session( self.pklfile, *[ file, data, position, ignore_list ], mode = 'r' )
 
 
     def prepare_file( self, file, do_fit = False ):
@@ -130,7 +130,7 @@ class RFIBlaster:
             template = self.load_template( self.temp_dir, tmp_fn )
         except TemplateLoadError:
             print( "Template not found" )
-            reply = str( input( "Would you like to make a suitable one? (y / n)" ) ).lower().strip()
+            reply = str( input( "Would you like to make a suitable one? ('y' for yes)" ) ).lower().strip()
             if reply[0] == 'y':
                 temp = FD_Template( self.psr_name, fe, 1, template_dir = "templates", verbose = self.verbose, *self.dirs )
                 template = temp.make_template( gaussian_fit = do_fit )

@@ -93,23 +93,23 @@ def save_psrfits( save_filename, ar ):
       hdulist.writeto( save_filename, overwrite = True )
 
 
-def save_session( bin_file, arg = None, *args ):
+def save_session( bin_file, *args, mode = None ):
 
-    if len( arg ) is not 1:
+    if len( mode ) is not 1:
         raise ValueError( "Please only try to save one session at a time..." )
 
     root, ext = os.path.splitext( bin_file )
 
-    if ext is 'pkl':
-        if arg == 'm':
+    if ext == '.pkl':
+        if mode == 'm':
             return save_session_template_pickle( bin_file, *args )
-        elif arg == 'r':
+        elif mode == 'r':
             return save_session_rfi_pickle( bin_file, *args )
-        elif arg == 'c':
+        elif mode == 'c':
             return save_session_calibration_pickle( bin_file, *args )
         else:
             return 0
-    elif ext is 'json':
+    elif ext == '.json':
         raise TypeError( "Need to figure out how JSON works..." )
     else:
         return 0
