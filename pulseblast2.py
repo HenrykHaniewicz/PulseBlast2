@@ -1,7 +1,7 @@
 #!/usr/local/bin/python3
 
-# Master file for PulseBlast2
-# Sam Wallis-Riches, Kaine Bunting, 2019
+# Master file for PulseBlast 2
+# Henryk T. Haniewicz, Sam Wallis-Riches, Kaine Bunting, 2019
 
 EXT = '.fits'
 
@@ -400,7 +400,7 @@ if __name__ == "__main__":
                     pass
 
             if (t_index > c_index) and (t_index < r_index):
-                # run timing
+                print("Timing should go last")
                 pass
 
             if (("-r" in commands) or ("-rs" in commands) or ("-rn" in commands) or ("-rb" in commands)) and (counter == 1):
@@ -521,13 +521,14 @@ if __name__ == "__main__":
                 rfi.mitigation_setup()
 
             if t_index > r_index:
-                # run timing last
+                timer = Timer( name, jump_flags = "", epochs = 1, subbands = subbands, verbose = t_verbose )
+                timer.time()
                 pass
 
         elif r_index < c_index:
             # run rfi first, then cal
             if t_index < r_index:
-                # run timing first
+                print("Timing should go last")
                 pass
 
             if (("-r" in commands) or ("-rs" in commands) or ("-rn" in commands) or ("-rb" in commands)) and (counter == 1):
@@ -648,11 +649,10 @@ if __name__ == "__main__":
                 rfi.mitigation_setup()
 
             if (t_index > r_index) and (t_index < c_index):
-                # run timing
+                print("Timing should go last")
                 pass
 
             if ("-c" in commands) and (cont_name != None) and (cont_dir != None):
-                print("Kaine")
                 if saveddata_dir2 != None:
                     # run cal with saveddata_dir2
                     pass
@@ -662,8 +662,8 @@ if __name__ == "__main__":
                     pass
 
             if t_index > c_index:
-                # run timing last
-                pass
+                timer = Timer( name, jump_flags = "", epochs = 1, subbands = subbands, verbose = t_verbose )
+                timer.time()
 
     if ("-l" in commands) and (errors != []):
         # write to log file
