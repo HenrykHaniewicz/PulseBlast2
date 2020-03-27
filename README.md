@@ -15,6 +15,9 @@ Coming soon... maybe
 
 ## **Usage:**
 
+Each module can be run as a standalone unit with the PSR name and directories parsed in, or:
+
+
 Run `pulseblast2.py` in the terminal to start PulseBlast2. You will be met by the following command prompt:
 
 ```
@@ -31,7 +34,7 @@ Main block commands (-r, -c, -t) are interpreted in order, so `dirs psr_name -r 
 
 ### **Timing**
 
-Coming soon.
+`-t`                          Runs the timing algorithm
 
 ### **RFI Excision**
 
